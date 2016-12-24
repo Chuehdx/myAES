@@ -5,12 +5,7 @@
 # include "myAES.h"
 
 struct AESCrypt *myAESCryptstorage[20];
-int number_of_storage;
-
-void AEScrypt_init(){
-	number_of_storage = 0;
-}
-
+static int number_of_storage = 0;
 
 void AEScrypt_store(char* filename, char* encryptedfilename,char* decryptedfilename, EVP_CIPHER_CTX* de){
 	struct AESCrypt *myAESCrypt = NULL;
@@ -27,11 +22,12 @@ void AEScrypt_store(char* filename, char* encryptedfilename,char* decryptedfilen
 
 struct AESCrypt *AESCrypt_load(char* filename){
 	for(int i = 0;i<number_of_storage;i++){
+		//printf("file in storage : %s\n",myAESCryptstorage[i]->filename);
 		if(!strcmp(filename, myAESCryptstorage[i]->filename)){
-			printf("find file at position %d.\n", i);
+			//printf("find file at position %d.\n", i);
 			return myAESCryptstorage[i];
 		}	
 	}
-	printf("can't find %s.\n", filename);
+	printf("Error, can't find %s.\n", filename);
 	return;
 }
