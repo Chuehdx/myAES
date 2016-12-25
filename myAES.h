@@ -1,26 +1,30 @@
 # ifndef MYAES_H
 # define MYAES_H
 
-# define SIZE 1024
-# define TIMEFRAME 5.0
+#define SIZE 1024
+#define TIMEFRAME 5
 
-struct AES_encryptblock{
-	char password[32],salt[8];
+struct myAES_encryptblock{
+	unsigned char *key,*iv,*password;
 };
 
-struct AES_decryptblock{
-	char filename[20],encryptedfilename[30],decryptedfilename[30];
-	EVP_CIPHER_CTX *de;
+struct myAES_decryptblock{
+	unsigned char filename[20],encryptedfilename[30],decryptedfilename[30],*key,*iv,*password;
 };
 
-int aes_init(unsigned char* password, unsigned int password_len, unsigned char * salt, EVP_CIPHER_CTX *e_ctx, EVP_CIPHER_CTX *d_ctx);
 
-int aes_encrypt(char* filename, bool changekey);
+void myAES_Encrypt_init(EVP_CIPHER_CTX *e_ctx, char *key, char *iv);
 
-int aes_decrypt(char* filename);
+void myAES_Decrypt_init(EVP_CIPHER_CTX *d_ctx, char *key, char *iv);
 
-void generate_new_password(unsigned char* password);
+int myAES_generate_key_iv(unsigned char* password, unsigned int password_len, unsigned char * salt,unsigned char * key,unsigned char * iv);
 
-void generate_new_salt(unsigned char* salt);
+int myAES_Encrypt(char* filename, bool changekey);
+
+int myAES_Decrypt(char* filename);
+
+void myAES_generate_new_password(unsigned char* password);
+
+void myAES_generate_new_salt(unsigned char* salt);
 
 #endif
