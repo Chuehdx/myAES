@@ -6,42 +6,64 @@
 
 # define STORAGE_SIZE 20
 
-struct AES_decryptblock *myAESCryptstorage[STORAGE_SIZE];
-struct AES_encryptblock *now_encryptblock=NULL;
+struct myAES_decryptblock *decryptblock_storage[STORAGE_SIZE];
+struct myAES_encryptblock *encryptblock = NULL;
 static int number_of_storage = 0;
 
-void AEScrypt_store(char* filename, char* encryptedfilename,char* decryptedfilename, EVP_CIPHER_CTX* de){
-	struct AES_decryptblock *myAESCrypt = NULL;
-	myAESCrypt = malloc(sizeof(struct AES_decryptblock));
+void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename,char* decryptedfilename, char *key, char* iv, char* password){
+	struct myAES_decryptblock *myAESCrypt = NULL;
+	myAESCrypt = malloc(sizeof(struct myAES_decryptblock)+sizeof(unsigned char*)*(32*2+16));
 	strcpy(myAESCrypt->filename,filename);
 	strcpy(myAESCrypt->encryptedfilename,encryptedfilename);
 	strcpy(myAESCrypt->decryptedfilename,decryptedfilename);
-	myAESCrypt->de = de;
-	myAESCryptstorage[number_of_storage] = myAESCrypt;
+	myAESCrypt->key = malloc(sizeof(unsigned char*)*32);
+	strcpy(myAESCrypt->key,key);
+	myAESCrypt->iv = malloc(sizeof(unsigned char*)*16);
+	strcpy(myAESCrypt->iv,iv);
+	myAESCrypt->password = malloc(sizeof(unsigned char*)*32);
+	strcpy(myAESCrypt->password,password);
+	decryptblock_storage[number_of_storage] = myAESCrypt;
 	number_of_storage++;
 }
 
-void set_now_encryptblock(char* password, char* salt){
-	if(now_encryptblock == NULL){
-		now_encryptblock = malloc(sizeof(struct AES_decryptblock));
+void myAESStorage_set_encryptblock(char *key, char* iv, char* password){
+	if(encryptblock == NULL){
+		encryptblock = malloc(sizeof(struct myAES_encryptblock)+sizeof(unsigned char*)*(32*2+16));
 	}
-	strcpy(now_encryptblock->password,password);
-	strcpy(now_encryptblock->salt,salt);
+	encryptblock->key = malloc(sizeof(unsigned char*)*32);
+	strcpy(encryptblock->key,key);
+	encryptblock->iv = malloc(sizeof(unsigned char*)*16);
+	strcpy(encryptblock->iv,iv);
+	encryptblock->password = malloc(sizeof(unsigned char*)*32);
+	strcpy(encryptblock->password,password);
 }
 
-struct AES_encryptblock *get_now_encryptblock(){
-	return now_encryptblock;
+struct myAES_encryptblock *myAESStorage_get_encryptblock(){
+	return encryptblock;
 }
 
+int myAESStorage_get_number_of_storage(){
+	return number_of_storage;
+}
 
-struct AES_decryptblock *AESCrypt_load(char* filename){
+void myAESStorage_print_storage(){
+	printf("File in storage:\n");	
 	for(int i = 0;i<number_of_storage;i++){
-		//printf("file in storage : %s\n",myAESCryptstorage[i]->filename);
-		if(!strcmp(filename, myAESCryptstorage[i]->filename)){
-			//printf("find file at position %d.\n", i);
-			return myAESCryptstorage[i];
+		printf("(%d) %s ",i+1,decryptblock_storage[i]->filename);
+	}
+	printf("\n");
+}
+
+int myAESStorage_find_file_position(char* filename){
+	int i;	
+	for(i = 0;i<number_of_storage;i++){
+		if(!strcmp(filename, decryptblock_storage[i]->filename)){			
+			return i;
 		}	
 	}
-	printf("Error, can't find %s.\n", filename);
-	return;
+	return i;
+}
+
+struct myAES_decryptblock *myAESStorage_get_decryptblock(int i){
+	return decryptblock_storage[i];
 }
