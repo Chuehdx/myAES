@@ -19,6 +19,7 @@ int main(void){
 	timer_t start,end;
 	time(&start);
 	while(loop){
+		myAESStorage_print_storage();
 		printf("Input command : ");
 		scanf("%s",command);
 		if(!strcmp(command,"exit")){
@@ -32,36 +33,21 @@ int main(void){
 				isFirst=false;
 			}else
 				changekey = (difftime(end,start)>=TIMEFRAME?true:false);
-			if(aes_encrypt(filename,changekey)){
+			if(myAES_Encrypt(filename,changekey)){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to encrypt.");
-				//exit(-1);
-			}else
-				printf("%s\n","encryption successed.");
-			printf("%lf\n",difftime(end,start));
+			}
 			time(&start);
 		}else if(!strcmp(command,"de")){
 			printf("Input the name of file to decrypt: ");
 			scanf("%s",filename);
-			printf("file : %s\n",filename);
-			if(aes_decrypt(filename)){
+			if(myAES_Decrypt(filename)){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to decrypt.");
-				//exit(-1);
-			}else
-				printf("%s\n","decryption successed.");
+			}
 		}else{
 			printf("invalid command.\n");
 		}
 	}
-	
-
-	/*
-	
-	
-	
-	*/	
-	//EVP_CIPHER_CTX_cleanup(en);
-	//EVP_CIPHER_CTX_cleanup(de);
 	return 0;
 }
