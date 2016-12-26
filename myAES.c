@@ -37,7 +37,13 @@ int myAES_Encrypt(char* filename, bool changekey){
 	unsigned char *password=malloc(sizeof(unsigned char)*32),*salt=malloc(sizeof(unsigned char)*8),*key=malloc(sizeof(unsigned char)*32),*iv=malloc(sizeof(unsigned char)*16);
 	char encryptedfilename[30],decryptedfilename[30];	
 	char *inputbuffer=malloc(SIZE),*outputbuffer=malloc(SIZE+AES_BLOCK_SIZE);
-	int input_len = 0, final_len = 0, output_len = 0, inputfile, encryptedfile, password_len;
+	int input_len = 0, final_len = 0, output_len = 0, inputfile, encryptedfile, password_len, file_pos;
+
+	file_pos = myAESStorage_find_file_position(filename);
+	if(file_pos == STORAGE_SIZE){
+		printf("Error, Storage is full.\n");		
+		return 1;
+	}	
 	
 	//init array
 	memset(encryptedfilename, 0, 30);
@@ -57,7 +63,7 @@ int myAES_Encrypt(char* filename, bool changekey){
 		return 1;
 	}
 	
-	encryptedfile = open(encryptedfilename,O_RDWR|O_CREAT,0400|0200);
+	encryptedfile = open(encryptedfilename,O_RDWR|O_CREAT|O_TRUNC,0400|0200);
 	if(changekey){
 		srand(time(NULL));
 		myAES_generate_new_password(password);
@@ -98,7 +104,7 @@ int myAES_Encrypt(char* filename, bool changekey){
 		printf("Error, failed to write fianl encryption to file.\n");
 		return 1;
 	}
-	myAESStorage_store_decryptblock(filename,encryptedfilename,decryptedfilename,key,iv,password);
+	myAESStorage_store_decryptblock(filename,encryptedfilename,decryptedfilename,key,iv,password,file_pos);
 	close(inputfile);
 	close(encryptedfile);
 	printf("encryption successed with key ");	
@@ -138,7 +144,7 @@ int myAES_Decrypt(char* filename){//(EVP_CIPHER_CTX *d, int encryptedfile,int ou
 		return 1;
 	}
 	
-	outputfile = open(myAESCrypt->decryptedfilename,O_RDWR|O_CREAT,0400|0200);
+	outputfile = open(myAESCrypt->decryptedfilename,O_RDWR|O_CREAT|O_TRUNC,0400|0200);
 
 	
 	//start decryption

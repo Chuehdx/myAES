@@ -10,7 +10,7 @@ struct myAES_decryptblock *decryptblock_storage[STORAGE_SIZE];
 struct myAES_encryptblock *encryptblock = NULL;
 static int number_of_storage = 0;
 
-void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename,char* decryptedfilename, char *key, char* iv, char* password){
+void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename,char* decryptedfilename, char *key, char* iv, char* password, int file_pos){
 	struct myAES_decryptblock *myAESCrypt = NULL;
 	myAESCrypt = malloc(sizeof(struct myAES_decryptblock)+sizeof(unsigned char*)*(32*2+16));
 	strcpy(myAESCrypt->filename,filename);
@@ -22,8 +22,9 @@ void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename,cha
 	strcpy(myAESCrypt->iv,iv);
 	myAESCrypt->password = malloc(sizeof(unsigned char*)*32);
 	strcpy(myAESCrypt->password,password);
-	decryptblock_storage[number_of_storage] = myAESCrypt;
-	number_of_storage++;
+	decryptblock_storage[file_pos] = myAESCrypt;
+	if(file_pos == number_of_storage)
+		number_of_storage++;
 }
 
 void myAESStorage_set_encryptblock(char *key, char* iv, char* password){
