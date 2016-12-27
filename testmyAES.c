@@ -16,8 +16,10 @@ int main(void){
 	char command[5],filename[20];
 	int loop=1;
 	bool isFirst=true,changekey=true;
-	timer_t start,end;		//used to record time difference
-	time(&start);
+	struct timespec start,end;		//used to record time difference
+	double time_start,time_end;
+	clock_gettime( CLOCK_MONOTONIC, &start);
+	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 	while(loop){
 		myAESStorage_print_storage();
 		printf("Input command : ");
@@ -25,19 +27,24 @@ int main(void){
 		if(!strcmp(command,"exit")){//Command of exit
 			loop = 0;		
 		}else if(!strcmp(command,"en")){//Command of encryption
-			time(&end);
+			clock_gettime( CLOCK_MONOTONIC, &end);
+			time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;
 			printf("Input the name of file to encrypt: ");
 			scanf("%s",filename);
+			/*printf("start_time:%.5f\n", (time_start));
+			printf("end_time:%.5f\n", (time_end));
+			printf("time:%.5f\n", (time_end-time_start));*/
 			if(isFirst){ //first time we need to generate a new key
 				changekey=true;
 				isFirst=false;
 			}else //check the time difference between encrytion to tell if we need new key and iv
-				changekey = (difftime(end,start)>=TIMEFRAME?true:false);
+				changekey = ((time_end-time_start)>=TIMEFRAME?true:false);
 			if(myAES_Encrypt(filename,changekey)){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to encrypt.");
 			}
-			time(&start);
+			clock_gettime( CLOCK_MONOTONIC, &start);
+			time_start =  (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 		}else if(!strcmp(command,"de")){//Command of decryption
 			printf("Input the name of file to decrypt: ");
 			scanf("%s",filename);
