@@ -10,7 +10,6 @@ struct myAES_decryptblock *decryptblock_storage[STORAGE_SIZE];
 struct myAES_encryptblock *encryptblock = NULL;
 static int number_of_storage = 0;
 
-
 void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int file_pos){//store the decrypt info of the file into its block
 	if(file_pos == number_of_storage){//if the file isn't existed
 		struct myAES_decryptblock *myAESCrypt = NULL;
@@ -28,6 +27,11 @@ void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename, ch
 	memcpy(decryptblock_storage[file_pos]->key,key,strlen((unsigned char*)key));	
 	memcpy(decryptblock_storage[file_pos]->iv,iv,strlen((unsigned char*)iv));
 	memcpy(decryptblock_storage[file_pos]->password,password,strlen((unsigned char*)password));
+	/*printf("key in storage: ");	
+	for(int i=0;i<32;i++){
+		printf("%c",decryptblock_storage[file_pos]->password[i]);
+	}
+	printf("\n");*/
 }
 
 void myAESStorage_set_encryptblock(unsigned char *key, unsigned char* iv, unsigned char* password){//set the new key iv and password for encryption

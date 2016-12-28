@@ -2,7 +2,8 @@
 # define MYAES_H
 
 #define SIZE 1024
-#define TIMEFRAME 5
+#define BLK_SIZE 16
+#define TIMEFRAME 5.0
 
 struct myAES_encryptblock{	//This block is used to store key and iv for current encryption process. Password is stored here only to show the difference between different encryption key, since it is hard to tell the difference between key.
 	unsigned char *key,*iv,*password;
@@ -24,14 +25,14 @@ void myAES_Decrypt_init(EVP_CIPHER_CTX *d_ctx, char *key, char *iv);
 Using given key and iv to create and init a new decrypt cipher block.
 */
 
-int myAES_generate_key_iv(unsigned char* password, unsigned int password_len, unsigned char * salt,unsigned char * key,unsigned char * iv);
+int myAES_generate_key_iv(unsigned char* password, unsigned char * salt,unsigned char * key,unsigned char * iv);
 /*
 Using given password and salt to create new key and iv.
 EVP_BytesToKey will turning password into unreadable key
 salt is used to increase the security of the key
 */
 
-int myAES_Encrypt(char* filename, bool changekey);
+int myAES_Encrypt(char* filename, int changekey, int retry);
 /*
 main encryption process
 change key is used to tell if we need to generate a new key and iv.
@@ -55,4 +56,10 @@ void myAES_generate_new_salt(unsigned char* salt);
 /*
 generate new salt consisted of a-z by rand()
 */
+
+size_t myAES_get_file_length(char* filename);
+
+void myAES_read_file(char* filename, char* file,size_t file_len);
+
+
 #endif

@@ -1,5 +1,4 @@
 # include <stdio.h>
-# include <stdbool.h>
 # include <sys/types.h>    
 # include <sys/stat.h>    
 # include <fcntl.h>
@@ -14,14 +13,23 @@
 
 int main(void){
 	char command[5],filename[20];
-	int loop=1;
-	bool isFirst=true,changekey=true;
+	int loop=1,isFirst=1,changekey=1;
 	struct timespec start,end;		//used to record time difference
 	double time_start,time_end;
 	clock_gettime( CLOCK_MONOTONIC, &start);
 	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 	while(loop){
-		myAESStorage_print_storage();
+		if(!myAES_Encrypt("input1.txt",1,0)){
+			while(myAES_Decrypt("input1.txt")){
+				printf("in retrying plz\n");
+				sleep(1);
+				myAES_Encrypt("input1.txt",1,1);
+				
+			}
+		}else
+			break;
+		sleep(1);
+		/*myAESStorage_print_storage();
 		printf("Input command : ");
 		scanf("%s",command);
 		if(!strcmp(command,"exit")){//Command of exit
@@ -31,9 +39,6 @@ int main(void){
 			time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;
 			printf("Input the name of file to encrypt: ");
 			scanf("%s",filename);
-			/*printf("start_time:%.5f\n", (time_start));
-			printf("end_time:%.5f\n", (time_end));
-			printf("time:%.5f\n", (time_end-time_start));*/
 			if(isFirst){ //first time we need to generate a new key
 				changekey=true;
 				isFirst=false;
@@ -54,7 +59,7 @@ int main(void){
 			}
 		}else{
 			printf("invalid command.\n");
-		}
+		}*/
 	}
 	return 0;
 }
