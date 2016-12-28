@@ -10,7 +10,7 @@ struct myAES_decryptblock *decryptblock_storage[STORAGE_SIZE];
 struct myAES_encryptblock *encryptblock = NULL;
 static int number_of_storage = 0;
 
-void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int file_pos){//store the decrypt info of the file into its block
+void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int file_pos, int file_count){//store the decrypt info of the file into its block
 	if(file_pos == number_of_storage){//if the file isn't existed
 		struct myAES_decryptblock *myAESCrypt = NULL;
 		myAESCrypt = malloc(sizeof(struct myAES_decryptblock)+sizeof(unsigned char*)*(32*2+16));
@@ -20,6 +20,7 @@ void myAESStorage_store_decryptblock(char* filename, char* encryptedfilename, ch
 		myAESCrypt->key = malloc(sizeof(unsigned char*)*32);
 		myAESCrypt->iv = malloc(sizeof(unsigned char*)*16);
 		myAESCrypt->password = malloc(sizeof(unsigned char*)*32);
+		myAESCrypt->file_count = file_count;
 		decryptblock_storage[file_pos] = myAESCrypt;
 		number_of_storage++;
 	}

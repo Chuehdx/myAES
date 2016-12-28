@@ -3,15 +3,16 @@
 
 #define SIZE 1024
 #define BLK_SIZE 16
-#define TIMEFRAME 5.0
+#define TIMEFRAME .0
 
 struct myAES_encryptblock{	//This block is used to store key and iv for current encryption process. Password is stored here only to show the difference between different encryption key, since it is hard to tell the difference between key.
 	unsigned char *key,*iv,*password;
 };
 
 struct myAES_decryptblock{	//This block is used to store key and iv and the name of each single encrypted file for decryption. Password is stored here only to show that we used the same "key" to decrypt.
-	char filename[20],encryptedfilename[30],decryptedfilename[30];
+	char filename[20],encryptedfilename[40],decryptedfilename[30];
 	unsigned char *key,*iv,*password;
+	int file_count;
 };
 
 
@@ -56,5 +57,9 @@ void myAES_generate_new_salt(unsigned char* salt);
 /*
 generate new salt consisted of a-z by rand()
 */
+
+size_t myAES_get_file_length(char* filename);
+
+void myAES_read_file(char* filename,char* file,size_t file_len);
 
 #endif

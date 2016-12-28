@@ -53,11 +53,11 @@ int main(void){
 		}else if(!strcmp(command,"de")){//Command of decryption
 			printf("Input the name of file to decrypt: ");
 			scanf("%s",filename);
-			while(myAES_Decrypt(filename)){
-				myAES_Encrypt(filename,0,1);
-				sleep(0.5);
-				//ERR_print_errors_fp(stderr);
-				//printf("%s\n","Error, failed to decrypt.");
+			if(myAES_Decrypt(filename)){
+				//myAES_Encrypt(filename,0,1);
+				//sleep(0.5);
+				ERR_print_errors_fp(stderr);
+				printf("%s\n","Error, failed to decrypt.");
 			}
 		}else{
 			printf("invalid command.\n");
