@@ -57,9 +57,4 @@ void myAES_generate_new_salt(unsigned char* salt);
 generate new salt consisted of a-z by rand()
 */
 
-size_t myAES_get_file_length(char* filename);
-
-void myAES_read_file(char* filename, char* file,size_t file_len);
-
-
 #endif
