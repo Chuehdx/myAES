@@ -9,7 +9,7 @@
 # include <string.h>
 # include <unistd.h>  /* Many POSIX functions (but not all, by a large margin) */
 # include "myAES.h"
-# include "AESstorage.c"
+# include "AESstorage.h"
 
 void myAES_Encrypt_init(EVP_CIPHER_CTX *e_ctx, char *key, char *iv){//Create new encryption block
 	EVP_CIPHER_CTX_init(e_ctx);
@@ -21,296 +21,199 @@ void myAES_Decrypt_init(EVP_CIPHER_CTX *d_ctx, char *key, char *iv){//Create new
         EVP_DecryptInit_ex(d_ctx, EVP_aes_256_cbc(), NULL, key, iv);
 }
 
-int myAES_generate_key_iv(unsigned char* password, unsigned char * salt,unsigned char * key,unsigned char * iv){//generate new key and iv
+int myAES_generate_key_iv(unsigned char* password,int password_len, unsigned char * salt,unsigned char * key,unsigned char * iv){//generate new key and iv
 	int result, round = 5;
-	result = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha1(),salt,password,strlen((unsigned char*)password),round,key,iv);//turning password into key
+	result = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha1(),salt,password,password_len,round,key,iv);//turning password into key
 	if(result != 32){
 		printf("failed to generate key.\n");
-		return 1;	
+		return 0;	
 	}
-	return 0;
+	return 1;
 }
 
-int myAES_Encrypt(char* filename, int changekey, int retry){//Main encryption process
+int myAES_Encrypt(char* filename, int changekey){//Main encryption process
 	EVP_CIPHER_CTX en;
-	unsigned char *password=malloc(sizeof(unsigned char)*32),*salt=malloc(sizeof(unsigned char)*8),*key=malloc(sizeof(unsigned char)*32),*iv=malloc(sizeof(unsigned char)*16);
-	char encryptedfilename[40],decryptedfilename[30],destr[] = "-de.txt",enstr[] = "-en-00.txt";
-	unsigned char *inputbuffer=malloc(sizeof(unsigned char)*SIZE),*outputbuffer=malloc(sizeof(unsigned char)*(SIZE));
-	int input_len = 0, final_len = 0, output_len = 0, inputfile, encryptedfile, file_pos,file_count = 0;	
+	int final_len = 0, output_len = 0, password_len, inputfile, encryptedfile, file_pos, file_count = 0, blks, encrypt_result, total_len;	
+	size_t file_len;
 
 	file_pos = myAESStorage_find_file_position(filename);//check if the file is already existed in storage
 	if(file_pos == STORAGE_SIZE){
 		printf("Error, Storage is full.\n");		
-		return 1;
+		return 0;
+	}
+	inputfile = open(filename,O_RDONLY);//no such file
+	if(inputfile == -1){
+		printf("faild to open source file %s.\n",filename);
+		return 0;
 	}
 	
+	//make sure it can open file successfully then allocate memory to variables
+	unsigned char *password=(unsigned char *)malloc(sizeof(unsigned char)*32),*salt=(unsigned char *)malloc(sizeof(unsigned char)*8),*key=(unsigned char *)malloc(sizeof(unsigned char)*32),*iv=(unsigned char *)malloc(sizeof(unsigned char)*16), *outputbuffer, *file;
+	char encryptedfilename[40],decryptedfilename[30],destr[] = "-de.txt",enstr[] = "-en-00.txt";
+
 	//Clear file name array
-	memset(encryptedfilename, 0, 30);
+	memset(encryptedfilename, 0, 40);
 	memset(decryptedfilename, 0, 30);
 
-	//Open source file and create encrypted file
-	
+	//decide encrypted and decrypted file name
 	strncpy(encryptedfilename,filename,strlen(filename)-4);
-	//char tmpstr[] = "-en.txt";
 	strcat(encryptedfilename,enstr);
-	//encryptedfile = open(encryptedfilename,O_WRONLY|O_CREAT|O_TRUNC,0400|0200);
-
 	strncpy(decryptedfilename,filename,strlen(filename)-4);
 	strcat(decryptedfilename,destr);
 
-	inputfile = open(filename,O_RDONLY);
-	if(inputfile == -1){
-		printf("faild to open source file %s.\n",filename);
-		return 1;
-	}
-	
-	
+	//read file
+	file_len = myAES_get_file_length(filename);
+	file = (unsigned char *)malloc(sizeof(unsigned char)*file_len);
+	myAES_read_file(filename,file,file_len);
+
 	if(changekey){//need to change key
-		srand(time(NULL)*getpid());
+		srand(time(NULL));
 		myAES_generate_new_password(password);
 		myAES_generate_new_salt(salt);
-		if(myAES_generate_key_iv(password,salt,key,iv)){
+		password_len = strlen((char*)(password));
+		if(!myAES_generate_key_iv(password,password_len,salt,key,iv)){
 			printf("Error, failed to initialize key and IV.\n");
-			return -1;
+			return 0;
 		}
-		myAESStorage_set_encryptblock(key,iv,password);//store new key and iv info to storage
+		myAESStorage_set_encryptblock(key,iv,password,password_len);//store new key and iv info to storage
 	}else{//get current key and iv info from storage
 		struct myAES_encryptblock *encryptblock = myAESStorage_get_encryptblock();
-		memcpy(key,encryptblock->key,strlen((unsigned char*)encryptblock->key));
-		memcpy(iv,encryptblock->iv, strlen((unsigned char*)encryptblock->iv));
-		memcpy(password,encryptblock->password, strlen((unsigned char*)encryptblock->password));
+		memcpy(key,encryptblock->key,KEY_SIZE);
+		memcpy(iv,encryptblock->iv, KEY_SIZE/2);
+		password_len = encryptblock->password_len;
+		memcpy(password,encryptblock->password, password_len);
 	}
+	
 	//start of encryption process
 	myAES_Encrypt_init(&en,key,iv);
+	blks = (file_len/BLK_SIZE)+1;
+	outputbuffer = (unsigned char *)malloc(sizeof(unsigned char)*blks * BLK_SIZE);
 	
-	int total_len=0;
-	while((input_len = read(inputfile,inputbuffer,SIZE)) > 0){ // read source file and write it into inputbuffer
-		//printf("in en-update input_len:%d\n",input_len);
-		if(!EVP_EncryptUpdate(&en,(unsigned char*) outputbuffer, &output_len,(unsigned char*) inputbuffer,input_len)){ 		//* turning plain text in input file into cipher text and store in outputbuffer
-			printf("Error, failed to update encryption.\n");
-			return 1;
-		}
-		//memset(encryptedfileblockname, 0, 40);
-		//strcpy(encryptedfileblockname,encryptedfilename);
-		file_count = file_count +1;
-		encryptedfilename[strlen(encryptedfilename)-6] = file_count/10 + '0';
-		encryptedfilename[strlen(encryptedfilename)-5] = file_count%10 + '0';
-		//strcat(encryptedfileblockname,enstr);
-		//printf("filename :%s\n",encryptedfilename);
+	encrypt_result = EVP_EncryptUpdate(&en,(unsigned char*) outputbuffer, &output_len,(unsigned char*) file,file_len);//encrypt source file and write it into outputbuffer
+	if (encrypt_result == 0){
+		printf("failed to update.\n");
+		return 0;
+	}
+	encrypt_result = EVP_EncryptFinal_ex(&en, (unsigned char*) outputbuffer+output_len, &final_len);//encrypt the remaining bit of source file and write it into outputbuffer
+	total_len=output_len+final_len;
+	if (encrypt_result == 0 || total_len != (blks * BLK_SIZE)){
+		printf("failed to final update.\n");
+		return 0;
+	}
+	file_count = total_len/SIZE + 1;
+	for(int i=1;i<=file_count;i++){//write outputbuffer into files
+		encryptedfilename[strlen(encryptedfilename)-6] = i/10 + '0';
+		encryptedfilename[strlen(encryptedfilename)-5] = i%10 + '0';
 		encryptedfile = open(encryptedfilename,O_WRONLY|O_CREAT|O_TRUNC,0400|0200);
-		if(write(encryptedfile,outputbuffer,output_len) != output_len){//write to encrypted file from output buffer
+		int write_len;
+		if(i!=file_count)write_len = SIZE;
+		else write_len = total_len%SIZE;
+		if(write(encryptedfile,outputbuffer+SIZE*(i-1),write_len)!= write_len){
 			printf("Error, failed to write encryption to file.\n");
-			return 1;
+			return 0;
 		}
 		close(encryptedfile);
-		total_len+=input_len;
-		//printf("file length :%d\n",total_len);
 	}
-	if(!EVP_EncryptFinal_ex(&en, (unsigned char*) outputbuffer, &final_len)){//encrypt the remaining bytes of file
-		printf("Error, failed to update final encryption.\n");
-		return 1;
-	}
-	total_len+=final_len;
-	//printf("file length :%d\n",total_len);
-	encryptedfile = open(encryptedfilename,O_WRONLY|O_APPEND,0400|0200);
-	if(write(encryptedfile,outputbuffer,final_len) != final_len){//write the remaining bytes of source file to encrypted file
-		printf("Error, failed to write fianl encryption to file.\n");
-		return 1;
-	}
-	myAESStorage_store_decryptblock(filename,encryptedfilename,decryptedfilename,key,iv,password,file_pos,file_count);//Store the decrypt info of this file into its block
+	myAESStorage_store_decryptblock(filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,file_pos,file_count);//Store the decrypt info of this file into its block
 	
+	
+	printf("encryption successed with key ");
+	for(int i=0;i<32;i++)
+			printf("%c",password[i]);
+	printf("\n");
+
 	//close file and clear memory
 	close(inputfile);
-	close(encryptedfile);
-	//if(retry)
-		//printf("retryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n");
-	if(!retry){
-		printf("encryption successed with key ");
-			for(int i=0;i<32;i++){
-			printf("%c",password[i]);
-		}
-		printf("\n");
-	}
 	free(key);
 	free(password);
 	free(iv);
 	free(salt);
-	free(inputbuffer);
 	free(outputbuffer);
 	EVP_CIPHER_CTX_cleanup(&en);
-	return 0;
+	return 1;
 }
 
 int myAES_Decrypt(char* filename){
 	EVP_CIPHER_CTX de;
-	int input_len = 0, final_len = 0, output_len = 0, encryptedfile, outputfile, file_pos, file_count;
+	int final_len = 0, output_len = 0, password_len,encryptedfile, outputfile, file_pos, file_count, decrypt_result, total_len;
 	size_t file_len = 0,last_file_len = 0;	
-
+	
+	//find its decryption block position
 	file_pos = myAESStorage_find_file_position(filename);
 	if(file_pos == myAESStorage_get_number_of_storage()){
 		printf("Error, failed to find encrypted file.\n");
-		return 1;
+		return 0;
 	}
-	printf("in here\n");
-	unsigned char *key=malloc(sizeof(unsigned char)*32),*iv=malloc(sizeof(unsigned char)*16),*password=malloc(sizeof(unsigned char)*32),*file;
-	//unsigned char *inputbuffer = malloc(sizeof(unsigned char)*(SIZE+AES_BLOCK_SIZE)),*outputbuffer= malloc(sizeof(unsigned char)*(SIZE+AES_BLOCK_SIZE));
-	unsigned char *outputbuffer;
+	
+	//make sure it can find file then allocate memory to variables
+	unsigned char *key=(unsigned char *)malloc(sizeof(unsigned char)*32),*iv=(unsigned char *)malloc(sizeof(unsigned char)*16),*password=(unsigned char *)malloc(sizeof(unsigned char)*32), *file, *outputbuffer;
 	char encryptedfilename[40];
 
-	//find its decryption block position
-	printf("finish malloc\n");
-	
 	//get the decrypt info of the file from its decryption block
 	struct myAES_decryptblock *myAESCrypt = myAESStorage_get_decryptblock(file_pos);
-	memcpy(key,myAESCrypt->key, strlen((unsigned char*)myAESCrypt->key));
-	memcpy(iv,myAESCrypt->iv, strlen((unsigned char*)myAESCrypt->iv));
-	memcpy(password,myAESCrypt->password, strlen((unsigned char*)myAESCrypt->password));
+	memcpy(key,myAESCrypt->key, KEY_SIZE);
+	memcpy(iv,myAESCrypt->iv, KEY_SIZE/2);
+	password_len = myAESCrypt->password_len;
+	memcpy(password,myAESCrypt->password, password_len);	
+	memset(encryptedfilename, 0, 40);
 	strcpy(encryptedfilename,myAESCrypt->encryptedfilename);
 	file_count = myAESCrypt->file_count;
-	//encryptedfile = open(myAESCrypt->encryptedfilename,O_RDONLY);
-	printf("filename: %s\n",encryptedfilename);
 	
+	//get the length of encrypted file
 	last_file_len = myAES_get_file_length(encryptedfilename);
-	printf("getlastfile_len\n");
 	file_len = last_file_len + SIZE*(file_count-1);
-	/*for(int i=1;i<=file_count;i++){
-		encryptedfilename[strlen(encryptedfilename)-6] = i/10 + '0';
-		encryptedfilename[strlen(encryptedfilename)-5] = i%10 + '0';
-		printf("filename :%s\n",encryptedfilename);
-		file_len+=myAES_get_file_length(encryptedfilename);
-		printf("file_len_get: %d\n",file_len);
-	}*/
-	
-	printf("file_len_get: %lu",file_len);
-	file = malloc(sizeof(unsigned char)*file_len);
+	//read file into buffer
+	file =(unsigned char *) malloc(sizeof(unsigned char)*file_len);
 	for(int i=1;i<=file_count;i++){
 		encryptedfilename[strlen(encryptedfilename)-6] = i/10 + '0';
 		encryptedfilename[strlen(encryptedfilename)-5] = i%10 + '0';
-		int len;
-		if(i==file_count)len = last_file_len;
-		else len = SIZE;
-		myAES_read_file(encryptedfilename,file+SIZE*(i-1),len);
-		printf("read %s.\n",encryptedfilename);
+		int read_len;
+		if(i==file_count)read_len = last_file_len;
+		else read_len = SIZE;
+		myAES_read_file(encryptedfilename,file+SIZE*(i-1),read_len);
 	}
-	
-	/*printf("file in:  ");	
-	for(int i=0;i<file_len;i++){
-		printf("%c",file[i]);
-	}
-	printf("\nEND\n");
-	printf("file in len: %d\n",file_len);*/	
-	
-	/*if((lseek(encryptedfile,0,SEEK_SET)) != 0){	
-		printf("Error, failed to seek encrypted file.\n");
-		free(key);
-		free(password);
-		free(iv);
-		//free(inputbuffer);
-		//free(outputbuffer);
-		close(encryptedfile);
-		EVP_CIPHER_CTX_cleanup(&de);
-		return 1;
-	}*/
-	
+		
 	outputfile = open(myAESCrypt->decryptedfilename,O_WRONLY|O_CREAT|O_TRUNC,0400|0200);
+
 	//start of decryption process
 	myAES_Decrypt_init(&de,key,iv);
-	//new method here
-	outputbuffer = malloc(sizeof(unsigned char)*file_len);
+	outputbuffer =(unsigned char *) malloc(sizeof(unsigned char)*file_len);
 	
-	int ret = EVP_DecryptUpdate(&de,(unsigned char*) outputbuffer, &output_len,(unsigned char*) file,file_len);
-	if (ret == 0){
+	decrypt_result = EVP_DecryptUpdate(&de,(unsigned char*) outputbuffer, &output_len,(unsigned char*) file,file_len);//decrypt encrypted file and write it into outputbuffer
+	if (decrypt_result == 0){
 		printf("Error, failed to update decryption.\n");
-		return 1;
+		return 0;
 	}
 	if(write(outputfile,outputbuffer,output_len) != output_len){//write to output file from output buffer
 		printf("Error, failed to write decryption to file.\n");
-		return 1;
+		return 0;
 	}
-	ret = EVP_DecryptFinal_ex(&de, (unsigned char*) outputbuffer + output_len, &final_len);
-	int fin_len = output_len + final_len;
-	if(ret == 0 || fin_len > file_len){
+	decrypt_result = EVP_DecryptFinal_ex(&de, (unsigned char*) outputbuffer + output_len, &final_len);//decrypt the remaining bit of encrypted file and write it into outputbuffer
+	total_len = output_len + final_len;
+	if(decrypt_result == 0 || total_len > file_len){
 		printf("Error, failed to update final decryption.\n");
-		return 1;
+		return 0;
 	}
 	if(write(outputfile,outputbuffer+output_len,final_len) != final_len){
 		printf("Error, failed to write fianl decryption to file.\n");//write the remaining bytes of encrypted file to output file
-		return 1;
+		return 0;
 	}
-
-	/*
 	
-	while((input_len = read(encryptedfile,inputbuffer,SIZE)) > 0){ // read encrypted file and write it into inputbuffer
-		//printf("inde-update input_len:%d\n",input_len);
-		if(!EVP_DecryptUpdate(&de,(unsigned char*) outputbuffer, &output_len,(unsigned char*) inputbuffer,input_len)){ 		//*turning cipher text in encrypted file into plain text and store in outputbuffer 
-			printf("Error, failed to update decryption.\n");
-			free(key);
-			free(password);
-			free(iv);
-			free(inputbuffer);
-			free(outputbuffer);
-			close(encryptedfile);
-			close(outputfile);
-			EVP_CIPHER_CTX_cleanup(&de);
-			return 1;
-		}if(write(outputfile,outputbuffer,output_len) != output_len){//write to output file from output buffer
-			printf("Error, failed to write decryption to file.\n");
-			free(key);
-			free(password);
-			free(iv);
-			free(inputbuffer);
-			free(outputbuffer);
-			close(encryptedfile);
-			close(outputfile);
-			EVP_CIPHER_CTX_cleanup(&de);
-			return 1;
-		}	
-	}
-	if(!EVP_DecryptFinal_ex(&de, (unsigned char*) outputbuffer, &final_len)){//encrypt the remaining bytes of file 
-		printf("Error, failed to update final decryption.\n");
-		free(key);
-		free(password);
-		free(iv);
-		free(inputbuffer);
-		free(outputbuffer);
-		close(encryptedfile);
-		close(outputfile);
-		EVP_CIPHER_CTX_cleanup(&de);
-		return 1;
-	}
-	if(write(outputfile,outputbuffer,final_len) != final_len){
-		printf("Error, failed to write fianl decryption to file.\n");//write the remaining bytes of encrypted file to output file
-		free(key);
-		free(password);
-		free(iv);
-		free(inputbuffer);
-		free(outputbuffer);
-		close(encryptedfile);
-		close(outputfile);
-		EVP_CIPHER_CTX_cleanup(&de);
-		return 1;
-	}*/
-	
-	//close file and clear memory
-	//close(encryptedfile);
-	printf("before close\n");
-	close(outputfile);
 	printf("decryption successed with key ");	
 	for(int i=0;i<32;i++){
 		printf("%c",password[i]);
 	}
 	printf("\n");
-	printf("before free\n");
+	
+	//close file and clear memory
+	close(outputfile);
 	free(key);
 	free(password);
 	free(iv);
-	printf("before free file\n");
 	free(file);
-	//free(inputbuffer);
-	printf("before free buffer\n");
 	free(outputbuffer);
 	EVP_CIPHER_CTX_cleanup(&de);
-	return 0;
+	return 1;
 }
 
 void myAES_generate_new_password(unsigned char* password){
@@ -323,26 +226,26 @@ void myAES_generate_new_password(unsigned char* password){
 void myAES_generate_new_salt(unsigned char* salt){	
 	for(int i=0;i<8;i++){
 		int tmp = (rand()+getpid())%75 + 48;
-		//int tmp = rand()%26 + 97;
 		salt[i] = (char) tmp;
 	}
 }
 
 size_t myAES_get_file_length(char* filename){
-	FILE *tmp = fopen(filename,"rb");
+	FILE *tmp = fopen(filename,"r");
 	if(tmp!=NULL){
-		printf("opened\n");
 		fseek(tmp, 0, SEEK_END); 
-		printf("find last\n");
 		size_t length = ftell(tmp);
 		fclose(tmp);
 		return length;
 	}
+	fclose(tmp);
 }
 
 void myAES_read_file(char* filename,char* file,size_t file_len){
 	FILE *tmp = fopen(filename,"r");
-	fread(file,1,file_len,tmp);
+	if(tmp != NULL){
+		fread(file,1,file_len,tmp);
+	}
 	fclose(tmp);
 }
 

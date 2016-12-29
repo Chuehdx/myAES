@@ -6,9 +6,11 @@
 # include <stdlib.h>
 # include <openssl/evp.h>
 # include <openssl/aes.h>
+# include <openssl/err.h>
 # include <string.h>
 # include <unistd.h>  /* Many POSIX functions (but not all, by a large margin) */
 # include "myAES.h"
+# include "AESstorage.h"
 
 
 int main(void){
@@ -19,16 +21,6 @@ int main(void){
 	clock_gettime( CLOCK_MONOTONIC, &start);
 	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 	while(loop){
-		/*if(!myAES_Encrypt("input1.txt",1,0)){
-			while(myAES_Decrypt("input1.txt")){
-				printf("in retrying plz\n");
-				sleep(1);
-				myAES_Encrypt("input1.txt",0,1);
-				
-			}
-		}else
-			break;
-		sleep(1);*/
 		myAESStorage_print_storage();
 		printf("Input command : ");
 		scanf("%s",command);
@@ -44,7 +36,7 @@ int main(void){
 				isFirst=0;
 			}else //check the time difference between encrytion to tell if we need new key and iv
 				changekey = ((time_end-time_start)>=TIMEFRAME?1:0);
-			if(myAES_Encrypt(filename,changekey,0)){
+			if(!myAES_Encrypt(filename,changekey)){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to encrypt.");
 			}
@@ -53,9 +45,7 @@ int main(void){
 		}else if(!strcmp(command,"de")){//Command of decryption
 			printf("Input the name of file to decrypt: ");
 			scanf("%s",filename);
-			if(myAES_Decrypt(filename)){
-				//myAES_Encrypt(filename,0,1);
-				//sleep(0.5);
+			if(!myAES_Decrypt(filename)){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to decrypt.");
 			}
