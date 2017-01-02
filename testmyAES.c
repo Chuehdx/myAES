@@ -11,16 +11,27 @@
 # include <unistd.h>  /* Many POSIX functions (but not all, by a large margin) */
 # include "myAES.h"
 # include "AESstorage.h"
+# include "myTPA.h"
 
 
 int main(void){
-	char command[5],filename[20];
-	int loop=1,isFirst=1,changekey=1;
+	char command[5],filename[20],username[32],password[32];
+	int loop=1,isFirst=1,changekey=1,authenticated=0;
 	struct timespec start,end;		//used to record time difference
 	double time_start,time_end;
 	clock_gettime( CLOCK_MONOTONIC, &start);
 	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
-	while(loop){
+	myTPA_load_account();
+	while(!authenticated){
+		printf("\rPlease log in:\n");
+		printf("User : ");
+		scanf("%s",username);
+		printf("password : ");
+		scanf("%s",password);
+		if(myTPA_authentication(username,password))
+			authenticated = 1;
+	}
+	/*while(loop){
 		myAESStorage_print_storage();
 		printf("Input command : ");
 		scanf("%s",command);
@@ -52,6 +63,6 @@ int main(void){
 		}else{
 			printf("invalid command.\n");
 		}
-	}
+	}*/
 	return 0;
 }
