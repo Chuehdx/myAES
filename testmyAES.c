@@ -20,7 +20,7 @@ int main(void){
 	struct timespec start,end;		//used to record time difference
 	double time_start,time_end;
 	clock_gettime( CLOCK_MONOTONIC, &start);
-	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
+	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;	
 	myTPA_load_account();
 	while(!authenticated){//authentication process
 		printf("Please log in:\n");
@@ -56,7 +56,7 @@ int main(void){
 		}else if(!strcmp(command,"de")){//Command of decryption
 			printf("Input the name of file to decrypt: ");
 			scanf("%s",filename);
-			if(!myAES_Decrypt(filename)){
+			if(!myAES_Decrypt(filename,1)){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to decrypt.");
 			}

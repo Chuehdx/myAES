@@ -4,6 +4,8 @@
 #define SIZE 1024
 #define BLK_SIZE 16
 #define TIMEFRAME 0
+#define SYSTEM_PASSWORD "rdcVEzNO[5j?DUE<1vQpbu`mFNz_5t;p"
+#define SYSTEM_SALT "@Px71yP>"
 
 struct myAES_encryptblock{	//This block is used to store key and iv for current encryption process. Password is stored here only to show the difference between different encryption key, since it is hard to tell the difference between key. password_len is used to record the length of password to make sure it copy correctly when passed back to process
 	unsigned char *key,*iv,*password;
@@ -41,11 +43,13 @@ the function we are using here is EVP_Encrypt_ex provide by Openssl library.
 we encrypt the plain text here and store cipher into certain file.
 */
 
-int myAES_Decrypt(char* filename);
+int myAES_Decrypt(char* filename, int type);
 /*
 main decryption process
 We use the info in myAES_decryptblock to find the cipher file first.
 Then we use EVP_Decrypt_ex to decrypt cipher into plain text and store it in another file.
+type 0 for decrypting account list
+type 1 for decrypting normal file
 */
 
 void myAES_generate_new_password(unsigned char* password);
