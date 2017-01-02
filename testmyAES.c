@@ -22,8 +22,8 @@ int main(void){
 	clock_gettime( CLOCK_MONOTONIC, &start);
 	time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 	myTPA_load_account();
-	while(!authenticated){
-		printf("\rPlease log in:\n");
+	while(!authenticated){//authentication process
+		printf("Please log in:\n");
 		printf("User : ");
 		scanf("%s",username);
 		printf("password : ");
@@ -31,7 +31,7 @@ int main(void){
 		if(myTPA_authentication(username,password))
 			authenticated = 1;
 	}
-	/*while(loop){
+	while(loop){
 		myAESStorage_print_storage();
 		printf("Input command : ");
 		scanf("%s",command);
@@ -63,6 +63,6 @@ int main(void){
 		}else{
 			printf("invalid command.\n");
 		}
-	}*/
+	}
 	return 0;
 }
