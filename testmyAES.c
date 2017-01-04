@@ -10,7 +10,7 @@
 # include <string.h>
 # include <unistd.h>  /* Many POSIX functions (but not all, by a large margin) */
 # include "myAES.h"
-# include "AESstorage.h"
+# include "myAESstorage.h"
 # include "myTPA.h"
 
 
@@ -31,7 +31,7 @@ int main(void){
 		if(myTPA_authentication(username,password))
 			authenticated = 1;
 	}
-	while(loop){
+	while(loop){	
 		myAESStorage_print_storage();
 		printf("Input command : ");
 		scanf("%s",command);

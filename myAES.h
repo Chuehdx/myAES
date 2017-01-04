@@ -15,7 +15,8 @@ struct myAES_encryptblock{	//This block is used to store key and iv for current 
 struct myAES_decryptblock{	//This block is used to store key and iv and the name of each single encrypted file for decryption. Password is stored here only to show that we used the same "key" to decrypt. password_len is used to record the length of password to make sure it  copy correctly when passed back to process
 	char filename[20],encryptedfilename[40],decryptedfilename[30];
 	unsigned char *key,*iv,*password;
-	int password_len,file_count;
+	int password_len,file_count,height;
+	struct myAES_decryptblock *left, *right, *next;
 };
 
 void myAES_Encrypt_init(EVP_CIPHER_CTX *e_ctx, char *key, char *iv);

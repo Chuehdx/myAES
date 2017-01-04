@@ -9,7 +9,7 @@
 # include <string.h>
 # include <unistd.h>
 # include "myAES.h"
-# include "AESstorage.h"
+# include "myAESstorage.h"
 
 void myAES_Encrypt_init(EVP_CIPHER_CTX *e_ctx, char *key, char *iv){//Create new encryption block
 	EVP_CIPHER_CTX_init(e_ctx);
@@ -33,14 +33,9 @@ int myAES_generate_key_iv(unsigned char* password,int password_len, unsigned cha
 
 int myAES_Encrypt(char* filename, int changekey){//Main encryption process
 	EVP_CIPHER_CTX en;
-	int final_len = 0, output_len = 0, password_len, inputfile, encryptedfile, file_pos, file_count = 0, blks, encrypt_result, total_len;	
+	int final_len = 0, output_len = 0, password_len, inputfile, encryptedfile, file_count = 0, blks, encrypt_result, total_len;	
 	size_t file_len;
 
-	file_pos = myAESStorage_find_file_position(filename);//check if the file is already existed in storage
-	if(file_pos == STORAGE_SIZE){
-		printf("Error, Storage is full.\n");		
-		return 0;
-	}
 	inputfile = open(filename,O_RDONLY);//no such file
 	if(inputfile == -1){
 		printf("faild to open source file %s.\n",filename);
@@ -114,12 +109,11 @@ int myAES_Encrypt(char* filename, int changekey){//Main encryption process
 		}
 		close(encryptedfile);
 	}
-	myAESStorage_store_decryptblock(filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,file_pos,file_count);//Store the decrypt info of this file into its block
-	
-	
-	printf("encryption successed with key ");
+	myAESStorage_set_root(myAESStorage_insert_node(myAESStorage_get_root(),filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,file_count));//Store the decrypt info of this file into its block
+
+	printf("encryption successed with key ");//encryption successed
 	for(int i=0;i<32;i++)
-			printf("%c",password[i]);
+		printf("%c",password[i]);
 	printf("\n");
 
 	//close file and clear memory
@@ -135,16 +129,25 @@ int myAES_Encrypt(char* filename, int changekey){//Main encryption process
 
 int myAES_Decrypt(char* filename, int type){
 	EVP_CIPHER_CTX de;
-	int final_len = 0, output_len = 0, password_len,encryptedfile, outputfile, file_pos, file_count, decrypt_result, total_len;
+	int final_len = 0, output_len = 0, password_len,encryptedfile, outputfile, file_count, decrypt_result, total_len;
 	size_t file_len = 0,last_file_len = 0;
+	struct myAES_decryptblock *myAESCrypt;
 	
 	if(type){//decrypt normal file
-		//find its decryption block position
-		file_pos = myAESStorage_find_file_position(filename);
-		if(file_pos == myAESStorage_get_number_of_storage()){
-			printf("Error, failed to find encrypted file.\n");
+		//search the decrypt block in the tree structure
+		myAESCrypt = myAESStorage_search_node(filename);
+		if(myAESCrypt == NULL){
+			printf("Error, failed to find the encrypted file.\n");
 			return 0;
 		}
+	}else{//decrypt account list
+		//check if the account list file exists or not
+		int test_accountlist = open(filename,O_RDONLY,0400|0200);
+		if(test_accountlist==-1){
+			printf("Error, failed to find account list.\n");
+			return 0;
+		}
+		close(test_accountlist);
 	}
 
 	//make sure it can find file then allocate memory to variables
@@ -153,7 +156,6 @@ int myAES_Decrypt(char* filename, int type){
 
 	if(type){//decrypt normal file
 		//get the decrypt info of the file from its decryption block
-		struct myAES_decryptblock *myAESCrypt = myAESStorage_get_decryptblock(file_pos);
 		memcpy(key,myAESCrypt->key, KEY_SIZE);
 		memcpy(iv,myAESCrypt->iv, KEY_SIZE/2);
 		password_len = myAESCrypt->password_len;
@@ -173,7 +175,7 @@ int myAES_Decrypt(char* filename, int type){
 		strcpy(decryptedfilename,"Accountlist-de.txt");
 		file_count = 1;
 		myAES_generate_key_iv(password,strlen(password),salt,key,iv);//generate key and iv by system password and salt
-		}
+	}
 	//get the length of encrypted file
 	last_file_len = myAES_get_file_length(encryptedfilename);
 	file_len = last_file_len + SIZE*(file_count-1);
@@ -223,7 +225,6 @@ int myAES_Decrypt(char* filename, int type){
 		}
 		printf("\n");
 	}
-	
 	
 	//close file and clear memory
 	close(outputfile);
