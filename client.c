@@ -10,7 +10,7 @@ int main(void)
 {
     int sock , loop = 1;
     struct sockaddr_in server;
-    char message[1000] , server_reply[2000];
+    char user_name[32],password[32], server_reply[32],message[65];
      
     //Create socket
     sock = socket(AF_INET , SOCK_STREAM , 0);
@@ -35,11 +35,33 @@ int main(void)
      
     //keep communicating with server
     while(loop){
-	memset(message,0,strlen(message));
         printf("User name : ");
-        scanf("%s" , message);
+        scanf("%s" , user_name);
+	printf("password : ");
+	scanf("%s" , password);
+
+	memset(message,0,sizeof(message));
+	strcat(message,user_name);
+	strcat(message,",");
+	strcat(message,password);
+
+	if(send(sock , message , strlen(message) , 0) < 0){
+           	puts("Failed to send user info to server, please try again.");
+        }else{
+		if(recv(sock , server_reply , sizeof(server_reply) , 0) < 0)
+            		puts("Failed to receive respond from server, please try again.");
+		else{
+			if(!strcmp(server_reply,"1"))
+				loop = 0;
+			else
+				puts("Failed to log in, please try again.");
+		}
+	}
+	
+	
+	
         //Send some data
-        if( send(sock , message , strlen(message) , 0) < 0){
+        /*if( send(sock , message , strlen(message) , 0) < 0){
             puts("Send failed");
             return 1;
         }
@@ -69,7 +91,7 @@ int main(void)
 		
 	}else{
 		puts("Failed to send the user info.");
-	}
+	}*/
 		
     }
      

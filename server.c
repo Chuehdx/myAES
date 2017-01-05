@@ -1,6 +1,7 @@
 /*
     C socket server example
 */
+#include<stdlib.h>
 #include<stdio.h>
 #include<string.h>    //strlen
 #include<sys/socket.h>
@@ -11,8 +12,8 @@ int main(void)
 {
     int socket_desc , client_sock , c , read_size , authenticated = 0;
     struct sockaddr_in server , client;
-    char client_message[2000];
-    char user_name[32],password[32];
+    char client_message[65];
+    char *user_name,*password;
 
     //Create socket
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
@@ -54,23 +55,24 @@ int main(void)
     
     //Receive a message from client
     while(!authenticated){
- 	memset(client_message,0,strlen(client_message));
-	if((read_size = recv(client_sock , client_message , 2000 , 0)) > 0 ){
-		strcpy(user_name,client_message);
+ 	memset(client_message,0,sizeof(client_message));
+	if((read_size = recv(client_sock , client_message , sizeof(client_message) , 0)) > 0 ){
+		printf("in: %s\n",client_message);
+		char *copy = malloc(sizeof(client_message));
+		strcpy(copy,client_message);
+		user_name = strsep(&copy,",");
 		printf("user name:%s\n",user_name);
-		write(client_sock , "1" , 1);
-	}
-	memset(client_message,0,strlen(client_message));
-	if((read_size = recv(client_sock , client_message , 2000 , 0)) > 0 ){
-		strcpy(password,client_message);
+		password = strsep(&copy,",");
 		printf("password:%s\n",password);
+		free(copy);
+
 		if(!strcmp(user_name,"tommy")&&!strcmp(password,"820105")){
 			authenticated = 1;
 			write(client_sock , "1" , 1);
 		}else
 			write(client_sock , "0" , 1);
-		
-	}
+	}else
+		puts("Failed to receive message from client.");
     }
      
     if(read_size == 0)
