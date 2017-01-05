@@ -2,7 +2,7 @@
 # define MYAESSTORAGE_H
 
 # define KEY_SIZE 32
-
+# define USER_LIMIT 32
 
 void myAESStorage_set_encryptblock(unsigned char *key, unsigned char* iv, unsigned char* password, int password_len);
 /*
@@ -69,5 +69,10 @@ struct myAES_decryptblock* myAESStorage_search_node(char *filename);
 /*
 search the node of the given file in the tree structure and return the decryptblock
 */
+
+void myAESStorage_set_usertoken(char *user_name, char* token);
+
+
+int myAESStorage_check_usertoken(char *user_name, char* token);
 
 #endif

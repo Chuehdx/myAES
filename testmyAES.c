@@ -15,7 +15,7 @@
 
 
 int main(void){
-	char command[5],filename[20],username[32],password[32];
+	char command[5],filename[20],username[32],password[32],token[32];
 	int loop=1,isFirst=1,changekey=1,authenticated=0;
 	struct timespec start,end;		//used to record time difference
 	double time_start,time_end;
@@ -28,8 +28,10 @@ int main(void){
 		scanf("%s",username);
 		printf("password : ");
 		scanf("%s",password);
-		if(myTPA_authentication(username,password))
+		if(myTPA_authentication(username,password,token)&&myAESStorage_check_usertoken(username,token)){
+			printf("log in successfully.\n");
 			authenticated = 1;
+		}
 	}
 	while(loop){	
 		myAESStorage_print_storage();

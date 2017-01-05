@@ -49,7 +49,7 @@ void myTPA_load_account();
 A function to load account info from file and build them as an AVL-tree
 */
 
-int myTPA_authentication(char *user_name, char *password);
+int myTPA_authentication(char *user_name, char *password, char *token);
 /*
 A function to check if the user name is in the tree and its password matches
 */

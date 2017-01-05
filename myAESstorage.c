@@ -7,6 +7,8 @@
 
 static struct myAES_encryptblock *encryptblock = NULL;
 static struct myAES_decryptblock *root = NULL,*first = NULL,*last = NULL;
+static char user_token[USER_LIMIT][2][32];
+static int user_count = 0;
 
 void myAESStorage_set_encryptblock(unsigned char *key, unsigned char* iv, unsigned char* password, int password_len){
 	if(encryptblock == NULL){//initialize
@@ -140,8 +142,7 @@ struct myAES_decryptblock* myAESStorage_insert_node(struct myAES_decryptblock* n
 			last->next=new_node;
 		last = new_node;//new node become the last node
 		return new_node;
-	}
-		
+	}	
     	if (strcmp(filename,node->filename)<0)
         	node->left  = myAESStorage_insert_node(node->left,filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,file_count);
     	else if (strcmp(filename,node->filename)>0)
@@ -198,4 +199,24 @@ struct myAES_decryptblock* myAESStorage_search_node(char *filename){
 	return now;
 }
 
+void myAESStorage_set_usertoken(char *user_name, char* token){
+	strcpy(user_token[user_count][0],user_name);
+	strcpy(user_token[user_count][1],token);
+	user_count = user_count + 1;
+}
 
+int myAESStorage_check_usertoken(char *user_name, char* token){
+	int count = 0;
+	while(count < user_count){
+		if(!strcmp(user_token[count][0],user_name)){
+			if(!strcmp(user_token[count][1],token)){
+				user_count = user_count - 1;
+				return 1;
+			}else
+				return 0;
+		}else
+			count = count + 1;
+	}
+	return 0;
+
+}

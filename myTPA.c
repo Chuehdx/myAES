@@ -5,6 +5,7 @@
 # include <openssl/aes.h>
 # include "myTPA.h"
 # include "myAES.h"
+# include "myAESstorage.h"
 
 static struct Node *root = NULL;
 
@@ -28,7 +29,7 @@ struct Node* myTPA_create_node(char *user_name,char *password){
     	new_node->height = 1;  // new node is initially added at leaf
     	return(new_node);
 }
- 
+
 struct Node *myTPA_rightRotate(struct Node *y){
     	struct Node *x = y->left;
     	struct Node *T2 = x->right;
@@ -124,12 +125,13 @@ void myTPA_load_account(){
 	remove("Accountlist-de.txt");//delete encrypted file
 }
 
-int myTPA_authentication(char *user_name, char *password){
+int myTPA_authentication(char *user_name, char *password, char *token){
 	struct Node *now = root;
 	while(now != NULL){//check if the user name is in the AVL-tree
 		if(!strcmp(user_name,now->user_name)){//find user node
 			if(!strcmp(password,now->password)){//password is correct
-				printf("Log in successfully.\n");
+				myAES_generate_new_password((unsigned char*)token);//generate authentication token
+				myAESStorage_set_usertoken(user_name,token);			
 				return 1;
 			}else{//wrong password
 				printf("Error, wrong password.\n");
@@ -154,4 +156,4 @@ void preOrder(struct Node *root){
         preOrder(root->right);
     }
 }
- 
+
