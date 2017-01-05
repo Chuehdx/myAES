@@ -8,6 +8,7 @@
 # include "myAESstorage.h"
 
 static struct Node *root = NULL;
+//char token[32];
 
 int myTPA_get_height(struct Node *node){
 	if (node == NULL)
@@ -129,8 +130,8 @@ int myTPA_authentication(char *user_name, char *password, char *token){
 	struct Node *now = root;
 	while(now != NULL){//check if the user name is in the AVL-tree
 		if(!strcmp(user_name,now->user_name)){//find user node
-			if(!strcmp(password,now->password)){//password is correct
-				myAES_generate_new_password((unsigned char*)token);//generate authentication token
+			if(!strcmp(password,now->password)){//password is correct			
+				myAES_generate_new_password(token);//generate authentication token
 				myAESStorage_set_usertoken(user_name,token);			
 				return 1;
 			}else{//wrong password
@@ -146,6 +147,9 @@ int myTPA_authentication(char *user_name, char *password, char *token){
 	printf("Error, invalid user name.\n");
 	return 0;
 }
+
+
+
 
 void preOrder(struct Node *root){
     if(root != NULL)

@@ -2,10 +2,12 @@
     C ECHO client example using sockets
 */
 #include<stdio.h> //printf
+#include <unistd.h>
 #include<string.h>    //strlen
 #include<sys/socket.h>    //socket
 #include<arpa/inet.h> //inet_addr
- 
+# include "myAESstorage.h"
+
 int main(void)
 {
     int sock , loop = 1;
@@ -48,11 +50,19 @@ int main(void)
 	if(send(sock , message , strlen(message) , 0) < 0){
            	puts("Failed to send user info to server, please try again.");
         }else{
-		if(recv(sock , server_reply , sizeof(server_reply) , 0) < 0)
+		memset(server_reply,0,sizeof(server_reply));//clear the content in the input buffer
+		memset(message,0,sizeof(message));//clear the content in the ouput buffer
+		if(recv(sock , server_reply , sizeof(server_reply), 0) < 0)
             		puts("Failed to receive respond from server, please try again.");
 		else{
-			if(!strcmp(server_reply,"1"))
+			if(strcmp(server_reply,"\0")){
+				printf("size:%lu\n",strlen(server_reply));
+				printf("token:%s\n",server_reply);
+				//if(myAESStorage_check_usertoken(user_name,token)
 				loop = 0;
+				//else
+					//puts("failed to submit token");
+			}
 			else
 				puts("Failed to log in, please try again.");
 		}
