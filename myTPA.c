@@ -5,7 +5,6 @@
 # include <openssl/aes.h>
 # include "myTPA.h"
 # include "myAES.h"
-# include "myAESstorage.h"
 
 static struct Node *root = NULL;
 //char token[32];
@@ -131,8 +130,7 @@ int myTPA_authentication(char *user_name, char *password, char *token){
 	while(now != NULL){//check if the user name is in the AVL-tree
 		if(!strcmp(user_name,now->user_name)){//find user node
 			if(!strcmp(password,now->password)){//password is correct			
-				myAES_generate_new_password(token);//generate authentication token
-				myAESStorage_set_usertoken(user_name,token);			
+				myAES_generate_new_password(token);//generate authentication token			
 				return 1;
 			}else{//wrong password
 				printf("Error, wrong password.\n");

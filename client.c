@@ -1,18 +1,18 @@
 /*
     C ECHO client example using sockets
 */
-#include<stdio.h> //printf
-#include <unistd.h>
-#include<string.h>    //strlen
-#include<sys/socket.h>    //socket
-#include<arpa/inet.h> //inet_addr
+# include <stdio.h> //printf
+# include <unistd.h>
+# include <string.h>    //strlen
+# include <sys/socket.h>    //socket
+# include <arpa/inet.h> //inet_addr
 # include "myAESstorage.h"
 
 int main(void)
 {
     int sock , loop = 1;
-    struct sockaddr_in server;
-    char user_name[32],password[32], server_reply[32],message[65];
+    struct sockaddr_in TPAserver;
+    char user_name[32],password[32], TPAserver_reply[32],message[65];
      
     //Create socket
     sock = socket(AF_INET , SOCK_STREAM , 0);
@@ -22,12 +22,12 @@ int main(void)
     }
     puts("Socket created");
      
-    server.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server.sin_family = AF_INET;
-    server.sin_port = htons( 1231 );
+    TPAserver.sin_addr.s_addr = inet_addr("127.0.0.1");
+    TPAserver.sin_family = AF_INET;
+    TPAserver.sin_port = htons( 1231 );
  
     //Connect to remote server
-    if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
+    if (connect(sock , (struct sockaddr *)&TPAserver , sizeof(TPAserver)) < 0)
     {
         perror("connect failed. Error");
         return 1;
@@ -35,7 +35,7 @@ int main(void)
      
     puts("Connected\n");
      
-    //keep communicating with server
+    //keep communicating with TPAserver
     while(loop){
         printf("User name : ");
         scanf("%s" , user_name);
@@ -48,16 +48,16 @@ int main(void)
 	strcat(message,password);
 
 	if(send(sock , message , strlen(message) , 0) < 0){
-           	puts("Failed to send user info to server, please try again.");
+           	puts("Failed to send user info to TPAserver, please try again.");
         }else{
-		memset(server_reply,0,sizeof(server_reply));//clear the content in the input buffer
+		memset(TPAserver_reply,0,sizeof(TPAserver_reply));//clear the content in the input buffer
 		memset(message,0,sizeof(message));//clear the content in the ouput buffer
-		if(recv(sock , server_reply , sizeof(server_reply), 0) < 0)
+		if(recv(sock , TPAserver_reply , sizeof(TPAserver_reply), 0) < 0)
             		puts("Failed to receive respond from server, please try again.");
 		else{
-			if(strcmp(server_reply,"\0")){
-				printf("size:%lu\n",strlen(server_reply));
-				printf("token:%s\n",server_reply);
+			if(strcmp(TPAserver_reply,"\0")){
+				printf("size:%lu\n",strlen(TPAserver_reply));
+				printf("token:%s\n",TPAserver_reply);
 				//if(myAESStorage_check_usertoken(user_name,token)
 				loop = 0;
 				//else
