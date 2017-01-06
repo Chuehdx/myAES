@@ -1,29 +1,27 @@
-/*
-    C socket server example
-*/
 # include <stdlib.h>
 # include <stdio.h>
-# include <string.h>    //strlen
+# include <string.h>   
 # include <sys/socket.h>
 # include <openssl/evp.h>
 # include <openssl/aes.h>
-# include <arpa/inet.h> //inet_addr
-# include <unistd.h>    //write
+# include <arpa/inet.h> 
+# include <unistd.h> 
+# include <openssl/err.h>
 # include "myAESstorage.h" 
-//# include "myAES.h"
+# include "myAES.h"
 
 int main(void)
 {
-	int socket_desc , client_sock, c , read_size , server_loop = 1 ,socket_loop = 1;
-	struct sockaddr_in server , client;
+	int server_socket, client_socket, c , read_size , server_loop = 1 ,socket_loop = 1;
+	struct sockaddr_in server, client;
 	char message[67];
-	char *user_name,*token,*client_type;
-	//Create socket
-	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-	if (socket_desc == -1){
+	char *user_name,*token,*command_type,*command,*file_name;
+	
+	//Create socket for connection
+	server_socket = socket(AF_INET , SOCK_STREAM , 0);
+	if (server_socket == -1){
 		printf("Could not create socket");
 	}
-	puts("Socket created");
 	     
 	//Prepare the sockaddr_in structure
 	server.sin_family = AF_INET;
@@ -31,65 +29,99 @@ int main(void)
 	server.sin_port = htons( 1233 );
 	     
 	//Bind
-	if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0){
+	if( bind(server_socket,(struct sockaddr *)&server , sizeof(server)) < 0){
 		//print the error message
-		perror("bind failed. Error");
+		perror("Error, failed to bind");
 		return 1;
 	}
-	puts("bind done");
-	     
-	
-	     
+	puts("Server create successfully");
+
+	//keep receiving connection from client or TPAserver
 	while(server_loop){
 		//Listen to max of 5 clients
-		listen(socket_desc , 5);
+		listen(server_socket , 5);
 		//Accept and incoming connection
 		puts("Waiting for incoming connections...");
 		c = sizeof(struct sockaddr_in);
 		
-		//accept connection from an incoming client
-		client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
-		if (client_sock < 0){
-			perror("accept failed");
+		//accept connection from client or TPAserver
+		client_socket = accept(server_socket, (struct sockaddr *)&client, (socklen_t*)&c);
+		if (client_socket < 0){
+			perror("Error, failed to accept connection");
 			return 1;
 		}
-		puts("Connection accepted");
+		puts("New Connection accepted");
+		socket_loop = 1;
 		while(socket_loop){
-	memset(message,0,sizeof(message));//not sure if needed
-			if((read_size = recv(client_sock , message , sizeof(message) , 0)) > 0 ){
-				printf("in: %s\n",message);
+			memset(message,0,sizeof(message));//clear buffer
+			if((read_size = recv(client_socket , message , sizeof(message) , 0)) > 0 ){//received message from client or TPAserver
 				char *copy = malloc(sizeof(message));
 				strcpy(copy,message);
-				client_type = strsep(&copy,",");
-				printf("client type:%s\n",client_type);
-				if(!strcmp(client_type,"0")){
+				command_type = strsep(&copy,",");//get command type
+				if(!strcmp(command_type,"0")){//from TPAserver for registeration
+					//split string into smaller parts
 					user_name = strsep(&copy,",");
-					printf("user_name:%s\n",user_name);
+					printf("User name:%s\n",user_name);
 					token = strsep(&copy,",");
-					printf("token:%s\n",token);
-					myAESStorage_set_usertoken(user_name,token);
-					write(client_sock , "1", 1);
+					printf("Token received from TPAserver:%s\n",token);
+					myAESStorage_set_usertoken(user_name,token);//registeration
+					write(client_socket , "1", 1);
 					socket_loop=0;
-				}else{
-					//
+					puts("Registeration successed");
+					for(int i=0;i<50;i++)printf("-");
+					puts("");
+				}else if(!strcmp(command_type,"1")){//from client for authentication
+					//split string into smaller parts
+					user_name = strsep(&copy,",");
+					printf("User name:%s\n",user_name);
+					token = strsep(&copy,",");
+					printf("Token received from client:%s\n",token);
+
+					if(myAESStorage_check_usertoken(user_name,token)){//user name and token matches
+						write(client_socket , "1", 1);
+						printf("User %s log in successfully with token %s\n",user_name,token);
+					}
+					else//user name and token doesn't match
+						write(client_socket , "0", 1);
+					for(int i=0;i<50;i++)printf("-");
+					puts("");
+				}
+				else if(!strcmp(command_type,"2")){//from client for encryption or decryption
+					//split string into smaller parts
+					command = strsep(&copy,",");
+					file_name = strsep(&copy,",");
+					if(!strcmp(command,"en")){//encryption
+						if(!myAES_Encrypt(file_name,1)){
+							ERR_print_errors_fp(stderr);
+							printf("%s\n","Error, failed to encrypt.");
+							write(client_socket , "0", 1);
+						}else{
+							write(client_socket , "1", 1);
+							puts("encrytion successed");
+						}
+					}else{//decryption
+						if(!myAES_Decrypt(file_name,1)){
+							ERR_print_errors_fp(stderr);
+							printf("%s\n","Error, failed to decrypt.");
+							write(client_socket , "0", 1);
+						}else{
+							write(client_socket , "1", 1);
+							puts("decrytion successed");
+						}
+					}
+					myAESStorage_print_storage();
+					puts("");
+				}else{//from client for exit
+					socket_loop=0;
+					server_loop=0;
+					write(client_socket , "1", 1);
 				}
 				free(copy);
 			}
 		}
-		/*else
-		puts("Failed to receive message from client.");*/
-		puts("not waiting");
 	}
-     
-    if(read_size == 0)
-    {
-        puts("Client disconnected");
-        fflush(stdout);
-    }
-    else if(read_size == -1)
-    {
-        perror("recv failed");
-    }
-     
-    return 0;
+    	close(client_socket);
+	close(server_socket);
+	puts("Storageserver closed");
+    	return 0;
 }

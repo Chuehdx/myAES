@@ -1,110 +1,166 @@
-/*
-    C ECHO client example using sockets
-*/
-# include <stdio.h> //printf
+# include <stdio.h> 
 # include <unistd.h>
-# include <string.h>    //strlen
-# include <sys/socket.h>    //socket
-# include <arpa/inet.h> //inet_addr
+# include <string.h>    
+# include <sys/socket.h> 
+# include <arpa/inet.h>
 # include "myAESstorage.h"
 
-int main(void)
-{
-    int sock , loop = 1;
-    struct sockaddr_in TPAserver;
-    char user_name[32],password[32], TPAserver_reply[32],message[65];
-     
-    //Create socket
-    sock = socket(AF_INET , SOCK_STREAM , 0);
-    if (sock == -1)
-    {
-        printf("Could not create socket");
-    }
-    puts("Socket created");
-     
-    TPAserver.sin_addr.s_addr = inet_addr("127.0.0.1");
-    TPAserver.sin_family = AF_INET;
-    TPAserver.sin_port = htons( 1231 );
+int main(void){
+    	int socket_to_TPA ,socket_to_storage, loop = 1;
+    	struct sockaddr_in TPAserver,Storageserver;
+    	char user_name[32], password[32], token[32], out_message[67],command[5],file_name[20],storage_message[32];
+	
+    	//create socket for connection
+    	socket_to_TPA = socket(AF_INET , SOCK_STREAM , 0);
+    	if (socket_to_TPA == -1){
+        	printf("Could not create socket");
+    	}
+
+	//setup info about TPAserver
+    	TPAserver.sin_addr.s_addr = inet_addr("127.0.0.1");
+    	TPAserver.sin_family = AF_INET;
+    	TPAserver.sin_port = htons( 1231 );
  
-    //Connect to remote server
-    if (connect(sock , (struct sockaddr *)&TPAserver , sizeof(TPAserver)) < 0)
-    {
-        perror("connect failed. Error");
-        return 1;
-    }
-     
-    puts("Connected\n");
-     
-    //keep communicating with TPAserver
-    while(loop){
-        printf("User name : ");
-        scanf("%s" , user_name);
-	printf("password : ");
-	scanf("%s" , password);
+    	//Connect to TPAserver
+    	if (connect(socket_to_TPA , (struct sockaddr *)&TPAserver , sizeof(TPAserver)) < 0){
+        	perror("Error, failed to connect to TPAserver");
+        	return 1;
+    	}
+    	puts("Established connection with TPAserver");
+    
+    	//keep communicating with TPAserver
+    	while(loop){
+		//get user name and password
+		printf("User name:");
+		scanf("%s", user_name);
+		printf("Password:");
+		scanf("%s", password);
 
-	memset(message,0,sizeof(message));
-	strcat(message,user_name);
-	strcat(message,",");
-	strcat(message,password);
+		//prepare message being sent to TPAserver
+		memset(out_message,0,sizeof(out_message));
+		strcat(out_message,user_name);
+		strcat(out_message,",");
+		strcat(out_message,password);
 
-	if(send(sock , message , strlen(message) , 0) < 0){
-           	puts("Failed to send user info to TPAserver, please try again.");
-        }else{
-		memset(TPAserver_reply,0,sizeof(TPAserver_reply));//clear the content in the input buffer
-		memset(message,0,sizeof(message));//clear the content in the ouput buffer
-		if(recv(sock , TPAserver_reply , sizeof(TPAserver_reply), 0) < 0)
-            		puts("Failed to receive respond from server, please try again.");
-		else{
-			if(strcmp(TPAserver_reply,"\0")){
-				printf("size:%lu\n",strlen(TPAserver_reply));
-				printf("token:%s\n",TPAserver_reply);
-				//if(myAESStorage_check_usertoken(user_name,token)
-				loop = 0;
-				//else
-					//puts("failed to submit token");
+		//send message to TPAserver
+		if(send(socket_to_TPA , out_message , strlen(out_message) , 0) < 0){
+		   	puts("Error, failed to send user info to TPAserver");
+		}else{
+			memset(token,0,sizeof(token));//clear the content in the input buffer
+			memset(out_message,0,sizeof(out_message));//clear the content in the ouput buffer
+			
+			//wait for reply from TPAserver
+			if(recv(socket_to_TPA , token , sizeof(token), 0) < 0)
+		    		puts("Error, failed to receive respond from server");
+			else{
+				//received reply(token) from TPAserver, if token is empty means that user is not authenticated
+				if(strcmp(token,"\0")){
+					printf("Token received from TPAserver:%s\n",token);
+					loop = 0;
+				}
+				else
+					puts("Error, Invalid user name or wrong password.");
 			}
+		}
+		for(int i=0;i<50;i++)printf("-");
+		puts("");
+	}
+
+	//create socket for new connection
+	socket_to_storage = socket(AF_INET , SOCK_STREAM , 0);
+	if (socket_to_storage == -1){
+		printf("Could not create socket");
+	}
+	//setup info about Storageserver
+	Storageserver.sin_addr.s_addr = inet_addr("127.0.0.1");
+	Storageserver.sin_family = AF_INET;
+	Storageserver.sin_port = htons( 1233 );
+
+	//Connect to Storageserver
+	if (connect(socket_to_storage , (struct sockaddr *)&Storageserver , sizeof(Storageserver)) < 0){
+		perror("Error, Established connection with Storageserver");
+	}else 
+		puts("Established connection with Storageserver");
+	
+	//prepare the authentication token used to enter Storageserver
+	memset(out_message,0,sizeof(out_message));
+	strcat(out_message,"1");
+	strcat(out_message,",");
+	strcat(out_message,user_name);
+	strcat(out_message,",");
+	strcat(out_message,token);
+	
+	//send the authentication token to Storageserver
+	write(socket_to_storage,out_message,sizeof(out_message));
+
+	//wait for respond from Storageserver
+	memset(storage_message,0,sizeof(storage_message));
+	while(recv(socket_to_storage , storage_message , sizeof(storage_message) , 0) < 0);
+	
+	if(!strcmp(storage_message,"1"))//token and user name matches
+		puts("Log in to Storageserver successfully");
+	else
+		puts("Error, failed to Log in to Storageserver");
+	for(int i=0;i<50;i++)printf("-");
+	puts("");
+
+	loop=1;
+	//Keep sending commant to Storageserver
+	while(loop){
+		printf("Input command : ");
+		scanf("%s",command);
+		if(!strcmp(command,"exit")){//Command of exit
+			memset(out_message,0,sizeof(out_message));
+			strcat(out_message,"3");
+			write(socket_to_storage,out_message,sizeof(out_message));
+			
+			//wait for respond from Storageserver to avoid packet loss
+			while(recv(socket_to_storage , storage_message , sizeof(storage_message) , 0) < 0);
+			if(!strcmp(storage_message,"1"))//close
+				loop = 0;
 			else
-				puts("Failed to log in, please try again.");
+				puts("Error, failed to close connection with server");	
+		}else if(!strcmp(command,"en")||!strcmp(command,"de")){//Command of encryption or decryption
+			if(!strcmp(command,"en"))
+				printf("Input the name of file to encrypt: ");
+			else
+				printf("Input the name of file to decrypt: ");
+			scanf("%s",file_name);
+			
+			//prepare message being sent to Storageserver
+			memset(out_message,0,sizeof(out_message));
+			strcat(out_message,"2");
+			strcat(out_message,",");
+			strcat(out_message,command);
+			strcat(out_message,",");
+			strcat(out_message,file_name);
+			
+			//send message to Storageserver
+			write(socket_to_storage,out_message,sizeof(out_message));
+
+			//wait for respond from Storageserver
+			while(recv(socket_to_storage , storage_message , sizeof(storage_message) , 0) < 0);
+			if(!strcmp(storage_message,"1")){
+				if(!strcmp(command,"en"))
+					puts("Encryption successed");
+				else
+					puts("Decryption successed");
+			}else{
+				if(!strcmp(command,"en"))
+					puts("Encryption failed");
+				else
+					puts("Decryption failed");
+			}
+			for(int i=0;i<50;i++)printf("-");
+			puts("");
+		}else{
+			printf("Error, invalid command\n");
+			for(int i=0;i<50;i++)printf("-");
+			puts("");
 		}
 	}
-	
-	
-	
-        //Send some data
-        /*if( send(sock , message , strlen(message) , 0) < 0){
-            puts("Send failed");
-            return 1;
-        }
-        //Receive a reply from the server
-        if( recv(sock , server_reply , 2000 , 0) < 0){
-            puts("recv failed");
-            break;
-        }
-	if(!strcmp(server_reply,"1")){
-		memset(message,0,strlen(message));
-		printf("password : ");
-		scanf("%s" , message);
-		//Send some data
-		if( send(sock , message , strlen(message) , 0) < 0){
-		    puts("Send failed");
-		    return 1;
-		}
-		//Receive a reply from the server
-		if( recv(sock , server_reply , 2000 , 0) < 0){
-		    puts("recv failed");
-		    break;
-		}
-		if(!strcmp(server_reply,"1"))
-			loop = 0;
-		else
-			puts("Failed to send the user info.");
-		
-	}else{
-		puts("Failed to send the user info.");
-	}*/
-		
-    }
-     
-    close(sock);
-    return 0;
+	//close socket
+ 	close(socket_to_TPA);
+	close(socket_to_storage);
+    	return 0;
 }
