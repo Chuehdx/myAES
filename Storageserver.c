@@ -81,8 +81,10 @@ int main(void)
 						write(client_socket , "1", 1);
 						printf("User %s log in successfully with token %s\n",user_name,token);
 					}
-					else//user name and token doesn't match
+					else{//user name and token doesn't match
 						write(client_socket , "0", 1);
+						puts("Error, unauthentiacted user or wrong token");
+					}
 					for(int i=0;i<50;i++)printf("-");
 					puts("");
 				}
@@ -113,7 +115,7 @@ int main(void)
 					puts("");
 				}else{//from client for exit
 					socket_loop=0;
-					server_loop=0;
+					//server_loop=0;
 					write(client_socket , "1", 1);
 				}
 				free(copy);

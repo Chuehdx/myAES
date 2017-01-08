@@ -147,9 +147,9 @@ int main(void){
 					puts("Decryption successed");
 			}else{
 				if(!strcmp(command,"en"))
-					puts("Encryption failed");
+					puts("Error, encryption failed");
 				else
-					puts("Decryption failed");
+					puts("Error, decryption failed");
 			}
 			for(int i=0;i<50;i++)printf("-");
 			puts("");
