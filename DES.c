@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <openssl/des.h>
 
 void DES_Encrypt( char *Key, char *Msg, int size, char *Res){
@@ -63,25 +64,37 @@ void generate_new_key(char* key){
 
 int main(){
 	char key[8];
-	char file_name[] = "input2.txt";
+	char file_name[] = "testfile.txt";
 	char *content;
 	char *decrypted;
 	char *encrypted;
 	int size;
-	 
-	generate_new_key(key);
+	struct timespec start,end;		//used to record time difference
+	double time_start,time_end;
+
 	size = get_file_length(file_name);
 	content = (char*)malloc(size);
 	encrypted = (char*)malloc(size);
 	decrypted = (char*)malloc(size);
 
-	read_file(file_name,content,size);	
-	printf("Clear text:\n%s\n",content); 
-	DES_Encrypt(key,content,size,encrypted);
-	printf("Encrypted text:\n%s\n",encrypted);
-	DES_Decrypt(key,encrypted,size,decrypted);
-	printf("Decrypted text:\n%s\n",decrypted);
+	read_file(file_name,content,size);
+	for(int i=0;i<10;i++){
+		clock_gettime( CLOCK_MONOTONIC, &start);
+		time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
 
+		generate_new_key(key);
+	
+		//printf("Clear text:\n%s\n",content); 
+		DES_Encrypt(key,content,size,encrypted);
+		//printf("Encrypted text:\n%s\n",encrypted);
+		DES_Decrypt(key,encrypted,size,decrypted);
+		//printf("Decrypted text:\n%s\n",decrypted);
+	
+		clock_gettime( CLOCK_MONOTONIC, &end);
+		time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;
+		printf("%lf\n",time_end-time_start);
+	}
+	
 	return (0);
 }
 
