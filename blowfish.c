@@ -110,14 +110,13 @@ main(void){
 		else
 			puts("en fail");
 
-		if(do_decrypt(entext,detext,key,iv,en_size))
-			printf("");
+		if(do_decrypt(entext,detext,key,iv,en_size)){
+			//printf("");
+			clock_gettime( CLOCK_MONOTONIC, &end);
+			time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;
 			//printf("Decrypted text:\n%s\n",detext);
-		else 
+		}else 
 			puts("de fail");
-
-		clock_gettime( CLOCK_MONOTONIC, &end);
-		time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;
 		printf("%lf\n",time_end-time_start);
 	}
 	free(plain);
