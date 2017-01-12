@@ -73,9 +73,9 @@ int main(void){
 		}
 	}
 	fclose(file);*/
-
+	
 	srand(time(NULL));
-	for(int i=0;i<10;i++){
+	//for(int i=0;i<10;i++){
 		num=1;
 		clock_gettime( CLOCK_MONOTONIC, &start);
 		time_start = (double)start.tv_sec + 1.0e-9*start.tv_nsec;
@@ -89,24 +89,27 @@ int main(void){
 			fscanf(file,"%d",&count);
 			//printf("%d\n",count);
 		}*/
+		/*clock_gettime( CLOCK_MONOTONIC, &end);
+		time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;	
+		printf("%.9lf\n",1000000*(time_end-time_start));*/
+		
 		for(int k=1;k<=SIZE;k++){
 			memset(filename,0,32);
 			strcat(filename,loc);
 			sprintf(number, "%d", k);
 			strcat(filename,number);
 			strcat(filename,txt);
-	
-			FILE * file = fopen(filename,"r");//load info from encrypted file
-			fscanf(file,"%s",filename);
-			fscanf(file,"%s",key);
-			fscanf(file,"%s",iv);
-			fscanf(file,"%s",key);
-			fscanf(file,"%d",&len);
-			fscanf(file,"%d",&count);
+			FILE * filet = fopen(filename,"r");//load info from encrypted file
+			fscanf(filet,"%s",filename);
+			fscanf(filet,"%s",key);
+			fscanf(filet,"%s",iv);
+			fscanf(filet,"%s",key);
+			fscanf(filet,"%d",&len);
+			fscanf(filet,"%d",&count);
 		}
 		clock_gettime( CLOCK_MONOTONIC, &end);
-		time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;	
-		printf("%.9lf\n",1000000*(time_end-time_start)/SIZE);
-	}
+			time_end = (double)end.tv_sec + 1.0e-9*end.tv_nsec;	
+			printf("%.9lf\n",1000000*(time_end-time_start));
+	//}
 	return 0;
 }
