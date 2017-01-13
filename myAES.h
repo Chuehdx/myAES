@@ -22,7 +22,7 @@ EVP_BytesToKey will turning password into unreadable key
 salt is used to increase the security of the key
 */
 
-int myAES_Encrypt(char* filename, int changekey);
+int myAES_Encrypt(char* filename, int changekey , char *outp);
 /*
 main encryption process
 change key is used to tell if we need to generate a new key and iv.
@@ -30,7 +30,7 @@ the function we are using here is EVP_Encrypt_ex provide by Openssl library.
 we encrypt the plain text here and store cipher into certain file.
 */
 
-int myAES_Decrypt(char* filename, int type);
+int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, int en_file_count);
 /*
 main decryption process
 We use the info in myAES_decryptblock to find the cipher file first.

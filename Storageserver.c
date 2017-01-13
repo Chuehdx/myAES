@@ -12,10 +12,10 @@
 
 int main(void)
 {
-	int server_socket, client_socket, c , read_size , server_loop = 1 ,socket_loop = 1;
+	int server_socket, client_socket, c , read_size , server_loop = 1 ,socket_loop = 1,list_count=0;
 	struct sockaddr_in server, client;
-	char message[67];
-	char *user_name,*token,*command_type,*command,*file_name;
+	char message[500],file_list[500][32];
+	char *user_name,*token,*command_type,*command,*file_name,*reply = malloc(sizeof(char)),tmp[32];
 	
 	//Create socket for connection
 	server_socket = socket(AF_INET , SOCK_STREAM , 0);
@@ -54,8 +54,11 @@ int main(void)
 		socket_loop = 1;
 		while(socket_loop){
 			memset(message,0,sizeof(message));//clear buffer
+			memset(reply,0,sizeof(reply));
 			if((read_size = recv(client_socket , message , sizeof(message) , 0)) > 0 ){//received message from client or TPAserver
+				printf("in:%s\n",message);
 				char *copy = malloc(sizeof(message));
+				memset(copy,0,sizeof(copy));
 				strcpy(copy,message);
 				command_type = strsep(&copy,",");//get command type
 				if(!strcmp(command_type,"0")){//from TPAserver for registeration
@@ -65,60 +68,88 @@ int main(void)
 					token = strsep(&copy,",");
 					printf("Token received from TPAserver:%s\n",token);
 					myAESStorage_set_usertoken(user_name,token);//registeration
-					write(client_socket , "1", 1);
+					strcat(reply,"1");
+					write(client_socket , reply, sizeof(reply));
 					socket_loop=0;
+					//free(copy);
 					puts("Registeration successed");
 					for(int i=0;i<50;i++)printf("-");
 					puts("");
+
 				}else if(!strcmp(command_type,"1")){//from client for authentication
 					//split string into smaller parts
 					user_name = strsep(&copy,",");
 					printf("User name:%s\n",user_name);
 					token = strsep(&copy,",");
 					printf("Token received from client:%s\n",token);
-
 					if(myAESStorage_check_usertoken(user_name,token)){//user name and token matches
-						write(client_socket , "1", 1);
+						strcat(reply,"1");
+						write(client_socket ,reply,sizeof(reply));
 						printf("User %s log in successfully with token %s\n",user_name,token);
-					}
-					else{//user name and token doesn't match
-						write(client_socket , "0", 1);
+					}else{//user name and token doesn't match
+						strcat(reply,"0");
+						write(client_socket ,reply,sizeof(reply));
 						puts("Error, unauthentiacted user or wrong token");
 					}
+					free(copy);
 					for(int i=0;i<50;i++)printf("-");
 					puts("");
-				}
-				else if(!strcmp(command_type,"2")){//from client for encryption or decryption
+				}else if(!strcmp(command_type,"2")){//from client for encryption or decryption
 					//split string into smaller parts
-					command = strsep(&copy,",");
+					user_name = strsep(&copy,",");
+					printf("User name:%s\n",user_name);
 					file_name = strsep(&copy,",");
-					if(!strcmp(command,"en")){//encryption
-						if(!myAES_Encrypt(file_name,1)){
-							ERR_print_errors_fp(stderr);
-							printf("%s\n","Error, failed to encrypt.");
-							write(client_socket , "0", 1);
-						}else{
-							write(client_socket , "1", 1);
-							puts("encrytion successed");
-						}
-					}else{//decryption
-						if(!myAES_Decrypt(file_name,1)){
-							ERR_print_errors_fp(stderr);
-							printf("%s\n","Error, failed to decrypt.");
-							write(client_socket , "0", 1);
-						}else{
-							write(client_socket , "1", 1);
-							puts("decrytion successed");
+					
+					
+					//check repeat
+					int repeat = 0;
+					for(int i=0;i<list_count;i++){
+						if(!strcmp(file_list[i],file_name)){
+							repeat=1;
+							i=list_count;
 						}
 					}
-					myAESStorage_print_storage();
-					puts("");
-				}else{//from client for exit
+					if(!repeat){
+						strcpy(file_list[list_count],file_name);
+						list_count = list_count + 1;
+						printf("New file %s upload successfully\n",file_name);
+					}else
+						printf("File %s update successfully\n",file_name);
+					
+					strcat(reply,"1");
+					write(client_socket,reply,sizeof(reply));
+					for(int i=0;i<list_count;i++){
+						printf("(%d) %s ",i+1,file_list[i]);
+					}
+					free(copy);
+					puts("\n");
+				}else if(!strcmp(command_type,"3")){//from client for exit
+					user_name = strsep(&copy,",");
+					printf("User name:%s\n",user_name);
+					file_name = strsep(&copy,",");
+					int exist=0;
+					for(int i=0;i<list_count;i++){
+						if(!strcmp(file_list[i],file_name)){
+							exist=1;
+							i=list_count;
+						}
+					}
+					if(exist){
+						printf("Sent back encrypted file %s\n",file_name);
+						strcat(reply,"1");
+					}else{
+						printf("Error, Can not find file %s\n",file_name);
+						strcat(reply,"0");
+					}
+					//write(client_socket ,reply,sizeof(reply));
+					free(copy);
+				}else if(!strcmp(command_type,"4")){//from client for exit
 					socket_loop=0;
 					//server_loop=0;
-					write(client_socket , "1", 1);
+					strcat(reply,"1");
+					write(client_socket ,reply,sizeof(reply));
+					free(copy);
 				}
-				free(copy);
 			}
 		}
 	}

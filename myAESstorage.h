@@ -13,7 +13,7 @@ struct myAES_encryptblock{	//This block is used to store key and iv for current 
 
 struct myAES_decryptblock{	//This block is used to store key and iv and the name of each single encrypted file for decryption. Password is stored here only to show that we used the same "key" to decrypt. password_len is used to record the length of password to make sure it  copy correctly when passed back to process
 	char filename[20],encryptedfilename[40],decryptedfilename[30];
-	unsigned char *key,*iv,*password;
+	unsigned char *key,*iv,*password,*salt;
 	int password_len,file_count,height;
 	struct myAES_decryptblock *left, *right, *next;
 };
@@ -54,7 +54,7 @@ int myAESStorage_max(int a, int b);
 compare two variables and return the greater one
 */
 
-struct myAES_decryptblock* myAESStorage_create_node(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password,int password_len, int file_count);
+struct myAES_decryptblock* myAESStorage_create_node(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password,int password_len, unsigned char* salt, int file_count);
 /*
 create a new node of decrypt block with the given info
 */
@@ -74,7 +74,7 @@ int myAESStorage_getBalance(struct myAES_decryptblock *node);
 A utility function to get Balance factor of given node
 */
 
-struct myAES_decryptblock* myAESStorage_insert_node(struct myAES_decryptblock* node, char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int password_len, int file_count);
+struct myAES_decryptblock* myAESStorage_insert_node(struct myAES_decryptblock* node, char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int password_len, unsigned char* salt, int file_count);
 /*
 insert a new node of decryptblock or update the existing decryptblock depending on it is already in the tree structure or not
 */

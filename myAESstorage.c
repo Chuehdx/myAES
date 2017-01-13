@@ -64,19 +64,22 @@ int myAESStorage_max(int a, int b){
 	return (a > b)? a : b;
 }
 
-struct myAES_decryptblock* myAESStorage_create_node(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password,int password_len, int file_count){
-    	struct myAES_decryptblock* new_node = (struct myAES_decryptblock*) malloc(sizeof(struct myAES_decryptblock)+sizeof(unsigned char)*((KEY_SIZE*3/2)+password_len));
+struct myAES_decryptblock* myAESStorage_create_node(char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password,int password_len, unsigned char* salt, int file_count){
+    	struct myAES_decryptblock* new_node = (struct myAES_decryptblock*) malloc(sizeof(struct myAES_decryptblock)+sizeof(unsigned char)*((KEY_SIZE*3)+password_len));
 	strcpy(new_node->filename,filename);
 	strcpy(new_node->encryptedfilename,encryptedfilename);
 	strcpy(new_node->decryptedfilename,decryptedfilename);
 	new_node->key = (unsigned char*)malloc(sizeof(unsigned char)*KEY_SIZE);
 	new_node->iv = (unsigned char*)malloc(sizeof(unsigned char)*KEY_SIZE/2);
 	new_node->password = (unsigned char*)malloc(sizeof(unsigned char)*password_len);
+	new_node->salt = (unsigned char*)malloc(sizeof(unsigned char)*KEY_SIZE/4);
+	
 	new_node->password_len = password_len;
 	new_node->file_count = file_count;
 	memcpy(new_node->key,key,KEY_SIZE);	
 	memcpy(new_node->iv,iv,KEY_SIZE/2);
 	memcpy(new_node->password,password,password_len);
+	memcpy(new_node->salt,salt,KEY_SIZE/4);
    	new_node->left   = NULL;
     	new_node->right  = NULL;
 	new_node->next 	 = NULL;
@@ -84,7 +87,7 @@ struct myAES_decryptblock* myAESStorage_create_node(char* filename, char* encryp
     	return(new_node);
 }
 
-void myAESStorage_update_node(struct myAES_decryptblock* node,char* encryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int password_len, int file_count){
+void myAESStorage_update_node(struct myAES_decryptblock* node,char* encryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int password_len, unsigned char* salt, int file_count){
 	//only update the info that may change
 	strcpy(node->encryptedfilename,encryptedfilename);
 	node->password_len = password_len;
@@ -92,6 +95,7 @@ void myAESStorage_update_node(struct myAES_decryptblock* node,char* encryptedfil
 	memcpy(node->key,key,KEY_SIZE);	
 	memcpy(node->iv,iv,KEY_SIZE/2);
 	memcpy(node->password,password,password_len);
+	memcpy(node->salt,salt,KEY_SIZE/4);
 }
 
 struct myAES_decryptblock *myAESStorage_rightRotate(struct myAES_decryptblock *y){
@@ -132,10 +136,10 @@ int myAESStorage_getBalance(struct myAES_decryptblock *node){
 	return myAESStorage_get_height(node->left) - myAESStorage_get_height(node->right);
 }
 
-struct myAES_decryptblock* myAESStorage_insert_node(struct myAES_decryptblock* node, char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int password_len, int file_count){
+struct myAES_decryptblock* myAESStorage_insert_node(struct myAES_decryptblock* node, char* filename, char* encryptedfilename, char* decryptedfilename, unsigned char *key, unsigned char* iv, unsigned char* password, int password_len, unsigned char* salt, int file_count){
 	/* 1.  Perform the normal BST insertion */
 	if (node == NULL){//create a new node
-		struct myAES_decryptblock* new_node = (myAESStorage_create_node(filename,encryptedfilename, decryptedfilename,key,iv,password,password_len,file_count));
+		struct myAES_decryptblock* new_node = (myAESStorage_create_node(filename,encryptedfilename, decryptedfilename,key,iv,password,password_len,salt,file_count));
 		if(last == NULL)//if it is the first node in the storage
 			first = new_node;
 		else	//make the last node point to the new node
@@ -144,11 +148,12 @@ struct myAES_decryptblock* myAESStorage_insert_node(struct myAES_decryptblock* n
 		return new_node;
 	}	
     	if (strcmp(filename,node->filename)<0)
-        	node->left  = myAESStorage_insert_node(node->left,filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,file_count);
+        	node->left  = myAESStorage_insert_node(node->left,filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,salt,file_count);
     	else if (strcmp(filename,node->filename)>0)
-        	node->right = myAESStorage_insert_node(node->right,filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,file_count);
+        	node->right = myAESStorage_insert_node(node->right,filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,salt,file_count);
     	else{ // Update existed node in BST
-		myAESStorage_update_node(node,encryptedfilename,key,iv,password,password_len,file_count);
+		printf("update %s\n",filename);
+		myAESStorage_update_node(node,encryptedfilename,key,iv,password,password_len,salt,file_count);
         	return node;
  	}
 
@@ -188,6 +193,8 @@ struct myAES_decryptblock* myAESStorage_search_node(char *filename){
 	struct myAES_decryptblock *now = root;
 	while(now != NULL){//check if the given node is in the tree structure or not
 		if(!strcmp(filename,now->filename)){//find user node
+			printf("find:%s\n",filename);
+			printf("its key:%s\n",now->password);
 			return now;
 		}else if(strcmp(filename,now->filename)<0){
 			now = now->left;

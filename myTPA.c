@@ -113,7 +113,7 @@ struct Node* myTPA_insert_node(struct Node* node, char *user_name, char *passwor
 }
  
 void myTPA_load_account(){
-	myAES_Decrypt("Accountlist.txt",0);//decrypt the account list and write it to encrypted file
+	myAES_Decrypt("Accountlist.txt",0,"","",1);//decrypt the account list and write it to encrypted file
 	FILE * file = fopen("Accountlist-de.txt","r");//load info from encrypted file
 	if (file) {
 		char user_name[32],password[32];
@@ -130,7 +130,7 @@ int myTPA_authentication(char *user_name, char *password, char *token){
 	while(now != NULL){//check if the user name is in the AVL-tree
 		if(!strcmp(user_name,now->user_name)){//find user node
 			if(!strcmp(password,now->password)){//password is correct			
-				myAES_generate_new_password(token);//generate authentication token			
+				myAES_generate_new_password(token);//generate authentication token	z		
 				return 1;
 			}else{//wrong password
 				printf("Error, wrong password.\n");
