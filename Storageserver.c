@@ -141,7 +141,7 @@ int main(void)
 						printf("Error, Can not find file %s\n",file_name);
 						strcat(reply,"0");
 					}
-					//write(client_socket ,reply,sizeof(reply));
+					write(client_socket ,reply,sizeof(reply));
 					free(copy);
 				}else if(!strcmp(command_type,"4")){//from client for exit
 					socket_loop=0;

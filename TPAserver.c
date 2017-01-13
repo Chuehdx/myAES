@@ -138,7 +138,7 @@ int main(void)
 					file_count = atoi(num);
 					myAESStorage_set_root(myAESStorage_insert_node(myAESStorage_get_root(),filename,encryptedfilename,decryptedfilename,key,key,key,KEY_SIZE,salt,file_count));
 					free(copy);
-					//write(client_socket ,"1",1);
+					write(client_socket ,"1",1);
 					puts("---------------------------------------------------------");
 					
 				}else if(!strcmp(type,"3")){

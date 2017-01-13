@@ -151,14 +151,21 @@ int main(void){
 				ERR_print_errors_fp(stderr);
 				printf("%s\n","Error, failed to encrypt.");
 			}else{
-				puts("encrytion successed");
+				puts("Encrytion successed");
 			}
 			printf("c e sent out TPA:\n%s\n",TPA_message);
 			write(socket_to_TPA,TPA_message,sizeof(TPA_message));
-		
+			memset(TPA_message,0,sizeof(TPA_message));
+			while(recv(socket_to_TPA , TPA_message , sizeof(TPA_message) , 0) < 0);
+			printf("fromTPA:%s\n",TPA_message);
+			if(!strcmp(TPA_message,"1")){
+				printf("Key of encrypted file %s stored successfully\n",file_name);
+			}else{
+				printf("Error, failed to store key of encrypted file %s\n",file_name);
+			}
+			
 			//send message to Storageserver
 			write(socket_to_storage,storage_message,sizeof(storage_message));
-		
 			//wait for respond from Storageserver
 			while(recv(socket_to_storage , storage_reply , sizeof(storage_reply) , 0) < 0);
 			if(!strcmp(storage_reply,"1")){
@@ -196,10 +203,11 @@ int main(void){
 					
 			printf("c d sent out TPA:\n%s\n",TPA_message);
 			write(socket_to_TPA,TPA_message,sizeof(TPA_message));
+			memset(TPA_message,0,sizeof(TPA_message));
 			while(recv(socket_to_TPA , TPA_message , sizeof(TPA_message),0)<0);
 			puts(TPA_message);
 
-			/*	
+			
 			char *copy = malloc(sizeof(TPA_message));
 			memset(copy,0,sizeof(copy));
 			strcpy(copy,TPA_message);
@@ -216,7 +224,7 @@ int main(void){
 			}else
 				puts("decrytion successed yaya");
 				//free(copy);
-			*/
+			
 			
 			for(int i=0;i<50;i++)printf("-");
 			puts("");
