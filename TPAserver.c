@@ -55,14 +55,12 @@ int main(void)
 		while(socket_loop){//check if the user is authenticated or not
 	 		memset(client_message,0,sizeof(client_message));//clear buffer
 			if((read_size = recv(client_socket , client_message , sizeof(client_message) , 0)) > 0 ){
-					
-				printf("in:%s\n",client_message);
+				//printf("in:%s\n",client_message);
 				//split string into smaller parts
 				char *copy = malloc(sizeof(client_message));
 				memset(copy,0,sizeof(copy));
 				strcpy(copy,client_message);
 				type = strsep(&copy,",");
-				printf("Type:%s\n",type);
 				user_name = strsep(&copy,",");
 				printf("User name:%s\n",user_name);
 				memset(client_message,0,sizeof(client_message));
@@ -98,7 +96,6 @@ int main(void)
 						strcat(storage_message,",");
 						token[32] = ',';
 						strcat(storage_message,token);
-						//printf("out:%s\n",storage_message);
 						write(storage_socket , storage_message, strlen(storage_message));
 		
 						memset(reply,0,sizeof(reply));
@@ -121,56 +118,49 @@ int main(void)
 					}
 					
 					for(int i=0;i<50;i++)printf("-");
-					puts("");
+					puts("\n");
 				}else if(!strcmp(type,"2")){
 					filename = strsep(&copy,",");
-					printf("filename:%s\n",filename);
+					//printf("filename:%s\n",filename);
 					encryptedfilename = strsep(&copy,",");
-					printf("encryptedfilename:%s\n",encryptedfilename);
+					//printf("encryptedfilename:%s\n",encryptedfilename);
 					decryptedfilename = strsep(&copy,",");
-					printf("decryptedfilename:%s\n",decryptedfilename);
+					//printf("decryptedfilename:%s\n",decryptedfilename);
 					key = strsep(&copy,",");
-					printf("key:%s\n",key);
+					//printf("key:%s\n",key);
 					salt = strsep(&copy,",");
-					printf("salt:%s\n",salt);
+					//printf("salt:%s\n",salt);
 					num = strsep(&copy,",");
-					printf("num:%s\n",num);
+					//printf("num:%s\n",num);
 					file_count = atoi(num);
 					myAESStorage_set_root(myAESStorage_insert_node(myAESStorage_get_root(),filename,encryptedfilename,decryptedfilename,key,key,key,KEY_SIZE,salt,file_count));
+					printf("Key %s of file %s stored successfully\n",key,filename);
 					free(copy);
 					write(client_socket ,"1",1);
-					puts("---------------------------------------------------------");
+					myAESStorage_print_storage();
+					puts("");
 					
 				}else if(!strcmp(type,"3")){
-					/*char t[] = "hello world\n";
-						write(client_socket ,t, sizeof(t));*/
-						filename = strsep(&copy,",");
-						printf("de-filename:%s\n",filename);
-						struct myAES_decryptblock *myAESCrypt = myAESStorage_search_node(filename);
-						myAESStorage_print_storage();
-						memset(client_message,0,sizeof(client_message));
-						if(myAESCrypt != NULL){
-							printf("de-key:%s\n",myAESCrypt->key);
-							printf("de-salt:%s\n",myAESCrypt->salt);
-							file_count = myAESCrypt->file_count;
-							sprintf(num,"%d",myAESCrypt->file_count);
-							printf("de-num:%s\n",num);
-
-							strcat(client_message,myAESCrypt->key);
-							strcat(client_message,",");
-							strcat(client_message,myAESCrypt->salt);
-							strcat(client_message,",");
-							strcat(client_message,num);
-							strcat(client_message,",");
-							//printf("sendt out :%s\n",client_message);
-							//write(client_socket ,client_message, sizeof(client_message));
+					filename = strsep(&copy,",");
+					struct myAES_decryptblock *myAESCrypt = myAESStorage_search_node(filename);
+					memset(client_message,0,sizeof(client_message));
+					if(myAESCrypt != NULL){
+						file_count = myAESCrypt->file_count;
+						sprintf(num,"%d",myAESCrypt->file_count);
+						strcat(client_message,myAESCrypt->key);
+						strcat(client_message,",");
+						strcat(client_message,myAESCrypt->salt);
+						strcat(client_message,",");
+						strcat(client_message,num);
+						strcat(client_message,",");
 						
-						}else{
-	 						puts("do nothing");
-						}
-						printf("sendt out :%s\n",client_message);
-						//write(client_socket ,"helloworld", 12);
-						send(client_socket ,client_message, sizeof(client_message),0);		
+					}else{
+	 					printf("Error, cant find key of file %s\n",filename);
+					}
+					printf("Key %s of file %s passed to client successfully\n",key,filename);
+					send(client_socket ,client_message, sizeof(client_message),0);
+					myAESStorage_print_storage();
+					puts("");	
 				}
 				
 			}else

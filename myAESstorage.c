@@ -33,7 +33,7 @@ void myAESStorage_print_storage(){
 	int count = 0;
 	for(int i=0;i<50;i++)printf("-");
 	printf("\n");
-	printf("File in storage:\n");
+	printf("Key in storage:\n");
 	while(now != NULL){
 		count = count + 1;
 		printf("(%d) %s ",count,now->filename);
@@ -193,8 +193,6 @@ struct myAES_decryptblock* myAESStorage_search_node(char *filename){
 	struct myAES_decryptblock *now = root;
 	while(now != NULL){//check if the given node is in the tree structure or not
 		if(!strcmp(filename,now->filename)){//find user node
-			printf("find:%s\n",filename);
-			printf("its key:%s\n",now->password);
 			return now;
 		}else if(strcmp(filename,now->filename)<0){
 			now = now->left;

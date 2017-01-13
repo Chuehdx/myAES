@@ -56,7 +56,6 @@ int main(void)
 			memset(message,0,sizeof(message));//clear buffer
 			memset(reply,0,sizeof(reply));
 			if((read_size = recv(client_socket , message , sizeof(message) , 0)) > 0 ){//received message from client or TPAserver
-				printf("in:%s\n",message);
 				char *copy = malloc(sizeof(message));
 				memset(copy,0,sizeof(copy));
 				strcpy(copy,message);
@@ -94,7 +93,7 @@ int main(void)
 					free(copy);
 					for(int i=0;i<50;i++)printf("-");
 					puts("");
-				}else if(!strcmp(command_type,"2")){//from client for encryption or decryption
+				}else if(!strcmp(command_type,"2")){//from client for encryption 
 					//split string into smaller parts
 					user_name = strsep(&copy,",");
 					printf("User name:%s\n",user_name);
@@ -118,12 +117,17 @@ int main(void)
 					
 					strcat(reply,"1");
 					write(client_socket,reply,sizeof(reply));
+					for(int i=0;i<50;i++)printf("-");
+					printf("\n");
+					printf("File in storage:\n");
 					for(int i=0;i<list_count;i++){
 						printf("(%d) %s ",i+1,file_list[i]);
 					}
-					free(copy);
+					printf("\n");	
+					for(int i=0;i<50;i++)printf("-");	
 					puts("\n");
-				}else if(!strcmp(command_type,"3")){//from client for exit
+					free(copy);
+				}else if(!strcmp(command_type,"3")){//from client decryption
 					user_name = strsep(&copy,",");
 					printf("User name:%s\n",user_name);
 					file_name = strsep(&copy,",");
@@ -142,6 +146,15 @@ int main(void)
 						strcat(reply,"0");
 					}
 					write(client_socket ,reply,sizeof(reply));
+					for(int i=0;i<50;i++)printf("-");
+					printf("\n");
+					printf("File in storage:\n");
+					for(int i=0;i<list_count;i++){
+						printf("(%d) %s ",i+1,file_list[i]);
+					}
+					printf("\n");	
+					for(int i=0;i<50;i++)printf("-");	
+					puts("\n");
 					free(copy);
 				}else if(!strcmp(command_type,"4")){//from client for exit
 					socket_loop=0;

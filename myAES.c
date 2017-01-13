@@ -111,7 +111,7 @@ int myAES_Encrypt(char* filename, int changekey, char *outputstr){//Main encrypt
 	}
 	myAESStorage_set_root(myAESStorage_insert_node(myAESStorage_get_root(),filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,salt,file_count));//Store the decrypt info of this file into its block
 
-	printf("encryption successed with key ");//encryption successed
+	printf("Encryption successed with key ");//encryption successed
 	for(int i=0;i<32;i++)
 		printf("%c",password[i]);
 	printf("\n");
@@ -181,7 +181,6 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 		file_count = myAESCrypt->file_count;*/
 
 		file_count = en_file_count;
-		printf("pre-de-file:%s\n",filename);
 		memset(encryptedfilename, 0, 40);
 		strncpy(encryptedfilename,filename,strlen(filename)-4);
 		strcat(encryptedfilename,enstr);
@@ -190,8 +189,6 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 		strcat(decryptedfilename,destr);
 		encryptedfilename[strlen(encryptedfilename)-6] = file_count/10 + '0';
 		encryptedfilename[strlen(encryptedfilename)-5] = file_count%10 + '0';
-		printf("pre-de-enfile:%s\n",encryptedfilename);
-		printf("pre-de-defile:%s\n",decryptedfilename);
 		myAES_generate_key_iv(en_password,32,en_salt,key,iv);
 		
 	}else{//decrypt account list
@@ -210,7 +207,6 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 	//read file into buffer
 	file =(unsigned char *) malloc(sizeof(unsigned char)*file_len);
 
-	puts("before read");
 	for(int i=1;i<=file_count;i++){
 		if(type){
 			encryptedfilename[strlen(encryptedfilename)-6] = i/10 + '0';
@@ -219,12 +215,10 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 		int read_len;
 		if(i==file_count)read_len = last_file_len;
 		else read_len = SIZE;
-		printf("read:%s\n",encryptedfilename);
 		myAES_read_file(encryptedfilename,file+SIZE*(i-1),read_len);
 	}
 		
 	outputfile = open(decryptedfilename,O_WRONLY|O_CREAT|O_TRUNC,0400|0200);
-	puts("before de");
 	//start of decryption process
 	myAES_Decrypt_init(&de,key,iv);
 	outputbuffer =(unsigned char *) malloc(sizeof(unsigned char)*file_len);
@@ -250,7 +244,7 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 	}
 	
 	if(type){
-		printf("decryption successed with key ");	
+		printf("Decryption successed with key ");	
 		for(int i=0;i<32;i++){
 			printf("%c",en_password[i]);
 		}
