@@ -81,8 +81,6 @@ int myAES_Encrypt(char* filename, int changekey, char *outputstr){//Main encrypt
 	}
 	//start of encryption process
 	myAES_Encrypt_init(&en,key,iv);
-	printf("en use key:%s\n",key);
-	printf("en use iv:%s\n",iv);
 	blks = (file_len/BLK_SIZE)+1;
 	outputbuffer = (unsigned char *)malloc(sizeof(unsigned char)*blks * BLK_SIZE);
 	
@@ -111,7 +109,6 @@ int myAES_Encrypt(char* filename, int changekey, char *outputstr){//Main encrypt
 		}
 		close(encryptedfile);
 	}
-	//myAESStorage_set_root(myAESStorage_insert_node(myAESStorage_get_root(),filename,encryptedfilename,decryptedfilename,key,iv,password,password_len,salt,file_count));//Store the decrypt info of this file into its block
 
 	printf("Encryption successed with key ");//encryption successed
 	for(int i=0;i<32;i++)
@@ -209,8 +206,6 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 	outputfile = open(decryptedfilename,O_WRONLY|O_CREAT|O_TRUNC,0400|0200);
 	//start of decryption process
 	myAES_Decrypt_init(&de,key,iv);
-	printf("de use key:%s\n",key);
-	printf("de use iv:%s\n",iv);
 	outputbuffer =(unsigned char *) malloc(sizeof(unsigned char)*file_len);
 	
 	decrypt_result = EVP_DecryptUpdate(&de,(unsigned char*) outputbuffer, &output_len,(unsigned char*) file,file_len);//decrypt encrypted file and write it into outputbuffer

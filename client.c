@@ -200,9 +200,7 @@ int main(void){
 				key = strsep(&copy,",");
 				printf("Key received from server: %s\n",key);
 				tmp = strsep(&copy,",");
-				//printf("salt received from server: %s\n",tmp);
 				memcpy(salt,tmp,8);
-				printf("salt: %s\n",salt);
 				num = strsep(&copy,",");
 				file_count = atoi(num);
 				if(!myAES_Decrypt(file_name,1,key,salt,file_count)){
