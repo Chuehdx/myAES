@@ -7,8 +7,31 @@
 # include <arpa/inet.h> 
 # include <unistd.h> 
 # include <openssl/err.h>
-# include "myAESstorage.h" 
-# include "myAES.h"
+
+static char user_token[32][2][32];
+static int user_count = 0;
+
+void set_usertoken(char *user_name, char* token){
+	strcpy(user_token[user_count][0],user_name);
+	strcpy(user_token[user_count][1],token);
+	user_count = user_count + 1;
+}
+
+int check_usertoken(char *user_name, char* token){
+	int count = 0;
+	while(count < user_count){
+		if(!strcmp(user_token[count][0],user_name)){
+			if(!strcmp(user_token[count][1],token)){
+				user_count = user_count - 1;
+				return 1;
+			}else
+				return 0;
+		}else
+			count = count + 1;
+	}
+	return 0;
+
+}
 
 int main(void)
 {
@@ -66,7 +89,7 @@ int main(void)
 					printf("User name:%s\n",user_name);
 					token = strsep(&copy,",");
 					printf("Token received from TPAserver:%s\n",token);
-					myAESStorage_set_usertoken(user_name,token);//registeration
+					set_usertoken(user_name,token);//registeration
 					strcat(reply,"1");
 					write(client_socket , reply, sizeof(reply));
 					socket_loop=0;
@@ -81,7 +104,7 @@ int main(void)
 					printf("User name:%s\n",user_name);
 					token = strsep(&copy,",");
 					printf("Token received from client:%s\n",token);
-					if(myAESStorage_check_usertoken(user_name,token)){//user name and token matches
+					if(check_usertoken(user_name,token)){//user name and token matches
 						strcat(reply,"1");
 						write(client_socket ,reply,sizeof(reply));
 						printf("User %s log in successfully with token %s\n",user_name,token);
