@@ -11,7 +11,7 @@ int main(void)
 {
 	int server_socket, storage_socket, client_socket, c ,read_size ,server_loop = 1 ,socket_loop = 1, file_count;
 	struct sockaddr_in TPAserver, Storageserver,client;
-	char client_message[500],token[33],storage_message[100],reply[32],de_message[100];
+	char client_message[1000],token[33],storage_message[100],reply[32],de_message[100];
 	char *type,*command,*user_name,*password,*filename,*encryptedfilename,*decryptedfilename,*key,*salt,*num;
 
 	//Create socket for client
@@ -55,7 +55,7 @@ int main(void)
 		while(socket_loop){//check if the user is authenticated or not
 	 		memset(client_message,0,sizeof(client_message));//clear buffer
 			if((read_size = recv(client_socket , client_message , sizeof(client_message) , 0)) > 0 ){
-				//printf("in:%s\n",client_message);
+				printf("in:%s\n",client_message);
 				//split string into smaller parts
 				char *copy = malloc(sizeof(client_message));
 				memset(copy,0,sizeof(copy));
@@ -149,7 +149,9 @@ int main(void)
 					}else{
 	 					printf("Error, cant find key of file %s\n",filename);
 					}
-					printf("Key %s of file %s passed to client successfully\n",myAESCrypt->password,filename);
+					//printf("Key %s of file %s passed to client successfully\n",myAESCrypt->password,filename);
+					printf("Key:%s\n",myAESCrypt->password);
+					printf("Salt:%s\n",myAESCrypt->salt);
 					send(client_socket ,client_message, sizeof(client_message),0);
 					myAESStorage_print_storage();
 					puts("");	

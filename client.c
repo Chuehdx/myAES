@@ -13,7 +13,7 @@
 int main(void){
     	int socket_to_TPA ,socket_to_storage, loop = 1, file_count;
     	struct sockaddr_in TPAserver,Storageserver;
-    	char user_name[32], password[32], *token = (char*)malloc(sizeof(char)*32), out_message[500], command[5], file_name[32],storage_reply[32] ,storage_message[500],TPA_message[500];
+    	char user_name[32], password[32], *token = (char*)malloc(sizeof(char)*32), out_message[500], command[5], file_name[32],storage_reply[32] ,storage_message[500],TPA_message[1000];
 	char *key,*salt,*num,*tmp;
     	//create socket for connection
     	socket_to_TPA = socket(AF_INET , SOCK_STREAM , 0);
@@ -198,15 +198,18 @@ int main(void){
 				memset(copy,0,sizeof(copy));
 				strcpy(copy,TPA_message);
 				key = strsep(&copy,",");
-				printf("Key received from server: %s\n",key);
-				tmp = strsep(&copy,",");
-				memcpy(salt,tmp,8);
+				//printf("Key received from server: %s\n",key);
+				salt = strsep(&copy,",");
+				printf("Key:%s\n",key);
+				printf("Salt:%s\n",salt);
+				//memcpy(salt,tmp,8);
 				num = strsep(&copy,",");
 				file_count = atoi(num);
 				if(!myAES_Decrypt(file_name,1,key,salt,file_count)){
 					ERR_print_errors_fp(stderr);
 					printf("%s\n","Error, failed to decrypt.");
 				}
+				puts("end de");
 			}else{
 				puts("Error, failed to receive key from server");
 			}			

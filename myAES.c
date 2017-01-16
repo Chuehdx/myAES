@@ -65,7 +65,7 @@ int myAES_Encrypt(char* filename, int changekey, char *outputstr){//Main encrypt
 		srand(time(NULL));
 		myAES_generate_new_password(password);
 		myAES_generate_new_salt(salt);
-		password_len = strlen((char*)(password));
+		password_len = KEY_SIZE;
 		
 		if(!myAES_generate_key_iv(password,password_len,salt,key,iv)){
 			printf("Error, failed to initialize key and IV.\n");
