@@ -55,7 +55,6 @@ int main(void)
 		while(socket_loop){//check if the user is authenticated or not
 	 		memset(client_message,0,sizeof(client_message));//clear buffer
 			if((read_size = recv(client_socket , client_message , sizeof(client_message) , 0)) > 0 ){
-				//printf("in:%s\n",client_message);
 				//split string into smaller parts
 				char *copy = malloc(sizeof(client_message));
 				memset(copy,0,sizeof(copy));
@@ -139,9 +138,9 @@ int main(void)
 					if(myAESCrypt != NULL){
 						file_count = myAESCrypt->file_count;
 						sprintf(num,"%d",myAESCrypt->file_count);
-						strcat(client_message,myAESCrypt->password);
+						strncat(client_message,myAESCrypt->password,KEY_SIZE);
 						strcat(client_message,",");
-						strcat(client_message,myAESCrypt->salt);
+						strncat(client_message,myAESCrypt->salt,KEY_SIZE/4);
 						strcat(client_message,",");
 						strcat(client_message,num);
 						strcat(client_message,",");
@@ -156,7 +155,6 @@ int main(void)
 				}
 				
 			}else
-				//puts("Error, failed to receive message from client.");
 				socket_loop=0;
 		}	
 	}

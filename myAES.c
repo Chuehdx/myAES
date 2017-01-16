@@ -114,12 +114,13 @@ int myAES_Encrypt(char* filename, int changekey, char *outputstr){//Main encrypt
 	for(int i=0;i<32;i++)
 		printf("%c",password[i]);
 	printf("\n");
+
 	//set outputstr
 	strcat(outputstr,filename);
 	strcat(outputstr,",");
-	strcat(outputstr,password);
+	strncat(outputstr,password,KEY_SIZE);
 	strcat(outputstr,",");
-	strcat(outputstr,salt);
+	strncat(outputstr,salt,KEY_SIZE/4);
 	strcat(outputstr,",");
 	char num[3];
 	sprintf(num,"%d",file_count);
@@ -142,14 +143,7 @@ int myAES_Decrypt(char* filename, int type , char *en_password, char *en_salt, i
 	size_t file_len = 0,last_file_len = 0;
 	struct myAES_decryptblock *myAESCrypt;
 	
-	if(type){//decrypt normal file
-		//search the decrypt block in the tree structure
-		/*myAESCrypt = myAESStorage_search_node(filename);
-		if(myAESCrypt == NULL){
-			printf("Error, failed to find the encrypted file.\n");
-			return 0;
-		}*/
-	}else{//decrypt account list
+	if(!type){//decrypt account list
 		//check if the account list file exists or not
 		int test_accountlist = open(filename,O_RDONLY,0400|0200);
 		if(test_accountlist==-1){
